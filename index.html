@@ -4912,23 +4912,33 @@ function placeCourtyardStones(core,redStone) {
   const old=core.exportable.getObjectByName('White quartz boulder');
   if(old){old.removeFromParent();old.geometry.dispose();old.material.dispose();}
   const textureCanvas=document.createElement('canvas');textureCanvas.width=512;textureCanvas.height=512;
-  const ctx=textureCanvas.getContext('2d'),random=Rs(2811);ctx.fillStyle='#e8e7df';ctx.fillRect(0,0,512,512);
+  const ctx=textureCanvas.getContext('2d'),random=Rs(2811);ctx.fillStyle='#e4e3dc';ctx.fillRect(0,0,512,512);
   for(let i=0;i<9500;i++){const shade=170+Math.floor(random()*75);ctx.fillStyle=`rgba(${shade},${shade},${shade},.12)`;ctx.fillRect(random()*512,random()*512,1+random()*3,1+random()*3);}
-  for(let i=0;i<11;i++){ctx.strokeStyle='rgba(102,108,106,.20)';ctx.lineWidth=.4+random();ctx.beginPath();ctx.moveTo(0,random()*512);ctx.lineTo(260,random()*512);ctx.lineTo(512,random()*512);ctx.stroke();}
+  for(let i=0;i<8;i++){const offset=i*79-220;ctx.strokeStyle='rgba(90,98,101,.27)';ctx.lineWidth=.7+random()*1.2;ctx.beginPath();ctx.moveTo(offset,0);ctx.lineTo(offset+170,250);ctx.lineTo(offset+360,512);ctx.stroke();}
   const quartzMaterial=new Ce({map:mi(textureCanvas,true,false),roughness:.90,metalness:0,flatShading:true,name:'Angular white quartz slab'});
-  const outline=[[-1.43,.08],[-1.46,.27],[-1.38,.49],[-1.44,.68],[-1.36,.91],[-1.40,1.13],[-1.30,1.25],[-1.05,1.29],[-.83,1.23],[-.60,1.30],[-.20,1.26]];
-  for(let i=0;i<=18;i++){const a=(110+75*i/18)*Math.PI/180;outline.push([.825*Math.cos(a),.825*Math.sin(a)]);}
-  const quartz=siteStonePrism('White quartz · cut wedge beside basin',outline,(x,z)=>Math.max(.07,.70-.45*z-.15*(x+1.43)+.026*Math.sin(x*31+z*13)),.025,quartzMaterial);
+  const outline=[[-1.2666,0.19068],[-1.06481,0.23547],[-0.82938,0.21307],[-0.71727,0.39224],[-0.6388,0.52662],[-0.47064,0.73939],[-0.30247,0.91856],[-0.26884,1.24331],[-0.47064,1.2993],[-0.73969,1.25451],[-0.97512,1.18732],[-1.13207,1.13133],[-1.21055,0.99695],[-1.23297,0.82897],[-1.35629,0.6946],[-1.34507,0.50423],[-1.27781,0.33625]];
+  const minX=Math.min(...outline.map(p=>p[0])),maxX=Math.max(...outline.map(p=>p[0])),minZ=Math.min(...outline.map(p=>p[1])),maxZ=Math.max(...outline.map(p=>p[1]));
+  const wedgeHeight=(x,z)=>.58-.26*(z-minZ)/(maxZ-minZ)-.025*(x-minX)/(maxX-minX);
+  const quartz=siteStonePrism('White quartz · cut wedge beside basin',outline,wedgeHeight,.025,quartzMaterial);
+  // Normalized coordinates keep the fracture veins on every face, including negative local X.
+  const quartzGeometry=quartz.geometry.toNonIndexed(),positions=quartzGeometry.attributes.position,coordinates=quartzGeometry.attributes.uv;
+  for(let i=0;i<positions.count;i+=3){
+    const a=new L().fromBufferAttribute(positions,i),b=new L().fromBufferAttribute(positions,i+1),c=new L().fromBufferAttribute(positions,i+2);
+    const normal=b.clone().sub(a).cross(c.clone().sub(a)).normalize();
+    for(let j=0;j<3;j++){const x=positions.getX(i+j),y=positions.getY(i+j),z=positions.getZ(i+j);coordinates.setXY(i+j,Math.abs(normal.y)>.5?(x-minX)/(maxX-minX):Math.abs(normal.z)>Math.abs(normal.x)?(x-minX)/(maxX-minX):(z-minZ)/(maxZ-minZ),Math.abs(normal.y)>.5?(z-minZ)/(maxZ-minZ):y/.60);}
+  }
+  quartz.geometry.dispose();quartz.geometry=quartzGeometry;quartzMaterial.bumpMap=quartzMaterial.map;quartzMaterial.bumpScale=.0009;
   quartz.position.set(core.poolCenter.x,0,core.poolCenter.z);core.exportable.add(quartz);
   // The two foreground stones flank the near edge of the same circular basin.
-  redStone.position.x=core.poolCenter.x+1.56;redStone.position.z=core.poolCenter.z+1.14;
+  redStone.position.x=core.poolCenter.x+1.40228;redStone.position.z=core.poolCenter.z+0.67587;redStone.rotation.y=0.40023;redStone.scale.set(0.89234,1,0.80829);
+  redStone.userData.planReference="Latest user overhead overlay";quartz.userData.planReference="Latest user overhead outline and rear-quarter photograph";
   return {quartz,stoneTarget:new L(core.poolCenter.x+.65,.45,core.poolCenter.z+.8)};
 }
 
 // Courtyard materials and architecture follow the CIA and Gillogly photographs.
 // Building dimensions and planting positions are a visual reconstruction, not a survey.
 // Refinements from the supplied front, lower-screen and reverse courtyard photos.
-// Positions are photo-guided estimates; the sculpture and its water/stone assembly
+// Positions follow the supplied overhead overlay and photographs. Copper and basin
 // retain their existing geometry and transforms.
 // Two distinct forms are visible in the supplied photograph and Gillogly's wide view:
 // an upright endstone on the left, and a broad fractured slab on the right.
@@ -4939,8 +4949,8 @@ function addMissingCornerSlab(site,lowSpec=false){
   const existing=site.courtyard.getObjectByName('Right background red stone slab');
   const topSource=existing.getObjectByName('Right slab · broad continuous stone surface').material;
   const edgeSource=existing.getObjectByName('Right slab · chipped stratified sides').material;
-  const outline=[[-.39,-.34],[-.13,-.39],[.13,-.35],[.25,-.40],[.43,-.29],[.82,-.31],[1.13,-.17],[1.30,.13],[1.23,.23],[.97,.20],[.67,.24],[.39,.28],[.35,.59],[.45,.79],[.31,.96],[.14,.91],[.02,1.07],[-.14,.98],[-.29,1.02],[-.34,.75],[-.37,.48],[-.43,.31],[-.36,.12],[-.45,-.12]];
-  const minX=-.45,maxX=1.30,minZ=-.40,maxZ=1.07,spanX=maxX-minX,spanZ=maxZ-minZ;
+  const outline=[[-0.36321,0.65717],[-0.40801,0.38812],[-0.39681,0.11906],[-0.27363,-0.08274],[-0.29602,-0.31816],[-0.09446,-0.38543],[0.1631,-0.39664],[0.31988,-0.32937],[0.43186,-0.18363],[0.56624,-0.12758],[0.58863,0.19753],[0.44306,0.17511],[0.31988,0.20874],[0.37587,0.44417],[0.34227,0.72444],[0.05112,0.72444],[-0.13925,0.6796]];
+  const minX=Math.min(...outline.map(p=>p[0])),maxX=Math.max(...outline.map(p=>p[0])),minZ=Math.min(...outline.map(p=>p[1])),maxZ=Math.max(...outline.map(p=>p[1])),spanX=maxX-minX,spanZ=maxZ-minZ;
   const size=lowSpec?512:1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
   const ctx=canvas.getContext('2d');ctx.drawImage(topSource.map.image,0,0,size,size);
   // The photograph shows this weathered circular mark on the slab, off the corner.
@@ -4955,7 +4965,7 @@ function addMissingCornerSlab(site,lowSpec=false){
   const edgeMaterial=edgeSource.clone();edgeMaterial.vertexColors=false;edgeMaterial.name='Corner slab · naturally broken red sides';
   const group=new Ke();group.name='Missing horizontal red slab · bench corner';group.position.set(3.60,.412,-5.05);group.rotation.y=-Math.PI/2;
   // The latest overhead photograph identifies the rear right-hand bench bend.
-  group.userData={installationFeature:'cornerRedSlab',horizontal:true,benchCorner:[3.60,-5.05],reference:'Upper-right bench bend circled in user overhead image dated 2026-11-21; archive photograph for surface'};
+  group.userData={installationFeature:'cornerRedSlab',horizontal:true,benchCorner:[3.60,-5.05],reference:'Compact upper bench footprint traced from the latest user overlay; archive photograph for surface'};
   const mesh=siteStonePrism('Irregular corner-spanning red slab',outline,(x,z)=>.145+.006*Math.sin(x*4.8+z*2.6)+.002*Math.sin(x*17-z*13),0,edgeMaterial);
   const geometry=mesh.geometry.toNonIndexed(),p=geometry.attributes.position,uv=geometry.attributes.uv;
   geometry.clearGroups();const topIndices=[],edgeIndices=[];
@@ -5003,15 +5013,10 @@ function rebuildPhotographedStoneSeats(parent,concrete,lowSpec=false){
   const edgeMaterial=new Ce({map:edgeMap,bumpMap:edgeMap,bumpScale:.0035,roughness:.91,metalness:0,flatShading:true,vertexColors:true,name:'Broken layered red stone edge'});
   const weatheredMaterial=new Ce({map:weatheredMap,bumpMap:weatheredMap,bumpScale:.002,roughness:.91,name:'Weathered upright red endstone face'});
   const box=(group,name,x,y,z,w,h,d,material)=>{const mesh=new ae(new dn(w,h,d),material);mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);return mesh;};
-  // The right-hand stone is one solid, roughly rectangular slab, not a narrow L.
+  // The lower right-hand slab follows the L-shaped return in the latest overlay.
   const right=new Ke();right.name='Right background red stone slab';right.userData.isBackgroundRedStone=true;
-  right.position.set(4.72,.412,-2.08);parent.add(right);
-  const width=2.45,depth=1.30,height=.18,outline=[];
-  const corners=[[-.50,-.50],[.43,-.50],[.50,-.38],[.49,.41],[.40,.50],[-.40,.49],[-.51,.34]];
-  for(let edge=0;edge<corners.length;edge++){
-    const a=corners[edge],b=corners[(edge+1)%corners.length],length=Math.hypot((b[0]-a[0])*width,(b[1]-a[1])*depth),steps=Math.max(1,Math.ceil(length/.22));
-    for(let j=0;j<steps;j++){const t=j/steps,x=(a[0]+(b[0]-a[0])*t)*width,z=(a[1]+(b[1]-a[1])*t)*depth;outline.push([x+Math.sin(edge*3.4+j*1.9)*.009,z+Math.cos(edge*4.2+j*2.1)*.012]);}
-  }
+  right.position.set(3.60,.412,-1.75);parent.add(right);
+  const width=1.05,depth=1.90,height=.18,outline=[[-0.23117,-1.77072],[0.00426,-1.75952],[0.35179,-1.79311],[0.38543,-1.2332],[0.38543,-0.71809],[0.40785,-0.41573],[0.67691,-0.41573],[0.71054,-0.16937],[0.81143,0.021],[0.53117,0.06579],[0.30695,0.04339],[0.0491,0.08819],[-0.23117,0.04339]];
   const positions=[],uv=[],colours=[],indices=[],n=outline.length;
   const fractions=[0,.20,.47,.76,1],offsets=[-.008,.003,-.006,-.002,0];
   let perimeter=0;const distance=[0];for(let i=1;i<n;i++){perimeter+=Math.hypot(outline[i][0]-outline[i-1][0],outline[i][1]-outline[i-1][1]);distance.push(perimeter);}
@@ -5043,7 +5048,7 @@ function rebuildPhotographedStoneSeats(parent,concrete,lowSpec=false){
   for(let i=0;i<endPositions.count;i++){const x=endPositions.getX(i),y=endPositions.getY(i),z=endPositions.getZ(i);endPositions.setXYZ(i,x+Math.sin(y*13+z*9)*.004,y+.305+Math.sin(x*19+z*11)*.004,z+Math.sin(y*16+x*11)*.004);}
   endGeometry.computeVertexNormals();
   const endstone=new ae(endGeometry,[endMaterial,endMaterial,weatheredMaterial,endMaterial,weatheredMaterial,endMaterial]);endstone.name='Left endstone · weathered face and exposed red body';endstone.castShadow=true;endstone.receiveShadow=true;left.add(endstone);
-  right.userData.reference='Broad red slab above the right planter corner in the supplied front photograph';left.userData.reference='Upright left endstone visible in Gillogly wideview.jpg';
+  right.userData.reference='Lower L-shaped slab footprint traced from the latest overhead drawing';left.userData.reference='Upright left endstone visible in Gillogly wideview.jpg';
   return {left,right};
 }
 
@@ -5563,6 +5568,37 @@ function buildKryptosSiteAddon(lowSpec=false,core={}) {
   return {root,courtyard,entrance,architecture,labels,phrases,views,compassAnchor,needleDirection,lodestonePosition,carving,
     showAll(v){root.visible=!!v;},showCourtyard(v){courtyard.visible=!!v;},showEntrance(v){entrance.visible=!!v;architecture.visible=!!v;},showLabels(v){labels.visible=!!v;}};
 }
+function refineSculpturePaving(core,site,lowSpec=false){
+  // The supplied rear-quarter photograph shows bare paving around the sculpture.
+  const immediateGrass=core.group.getObjectByName('Plants');
+  if(immediateGrass)immediateGrass.removeFromParent();
+  const paving=site.environment.photoRefinements.paving;
+  const slabs=paving.getObjectByName('Small rose granite paving slabs');
+  const size=lowSpec?512:768,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const context=canvas.getContext('2d'),random=Rs(220451),pixels=context.createImageData(size,size);
+  for(let i=0;i<pixels.data.length;i+=4){
+    const fine=(random()-.5)*20;
+    pixels.data[i]=185+fine;pixels.data[i+1]=172+fine;pixels.data[i+2]=169+fine;pixels.data[i+3]=255;
+  }
+  context.putImageData(pixels,0,0);
+  // Fine dark, cream and dusty-pink mineral grains follow the reference paving.
+  const palette=[[98,96,97],[136,129,131],[169,151,151],[189,173,168],[210,194,187],[227,214,204]];
+  for(let i=0;i<size*size*.18;i++){
+    const x=random()*size,y=random()*size,r=.50+random()*1.65,a=random()*Math.PI*2;
+    const pick=random(),index=pick<.08?0:pick<.22?1:pick<.40?2:pick<.63?3:pick<.88?4:5;
+    const c=palette[index],fine=(random()-.5)*13;context.fillStyle=`rgb(${c[0]+fine},${c[1]+fine},${c[2]+fine})`;
+    context.beginPath();
+    for(let j=0;j<5;j++){const q=a+j*Math.PI*2/5,rr=r*(.72+random()*.40);const px=x+Math.cos(q)*rr,py=y+Math.sin(q)*rr;if(j)context.lineTo(px,py);else context.moveTo(px,py);}
+    context.closePath();context.fill();
+  }
+  const map=mi(canvas,true,true);map.anisotropy=lowSpec?2:8;
+  const material=new Ce({map,bumpMap:map,bumpScale:.0013,roughness:.96,metalness:0,name:'Reference-matched fine pink-grey granite paving'});
+  slabs.material=material;
+  paving.getObjectByName('Flush granite inset joint bed').material.color.set(0xa79b94);
+  paving.userData.reference='Bare square speckled granite paving in the supplied rear-quarter photograph';
+  site.environment.photoRefinements.immediateGrassRemoved=true;
+}
+
 function addEnvironmentVisibility(site,lowSpec=false){
   const environment=site.environment,setting=environment.setting;
   const trees=new Ke();trees.name='Switchable courtyard trees';setting.add(trees);
@@ -5604,7 +5640,7 @@ async function $x(){let i=performance.now(),t=fe("scene"),e;try{e=new za({canvas
    if(oldForegroundRock){oldForegroundRock.removeFromParent();oldForegroundRock.geometry.dispose();oldForegroundRock.material.dispose();}
    C.exportable.add(foregroundStone);
    placeCourtyardStones(C,foregroundStone);
-   const siteAddon=buildKryptosSiteAddon(Ps,C);refineKryptosEnvironment(C,siteAddon,Ps);refinePhotoCourtyard(C,siteAddon,Ps);addMissingCornerSlab(siteAddon,Ps);addEnvironmentVisibility(siteAddon,Ps);n.add(siteAddon.root);
+   const siteAddon=buildKryptosSiteAddon(Ps,C);refineKryptosEnvironment(C,siteAddon,Ps);refinePhotoCourtyard(C,siteAddon,Ps);addMissingCornerSlab(siteAddon,Ps);refineSculpturePaving(C,siteAddon,Ps);addEnvironmentVisibility(siteAddon,Ps);n.add(siteAddon.root);
    const qSite=id=>fe(id);
    qSite('siteToggle').addEventListener('change',()=>siteAddon.showAll(qSite('siteToggle').checked));
    qSite('buildingsToggle').addEventListener('change',()=>siteAddon.showBuildings(qSite('buildingsToggle').checked));
