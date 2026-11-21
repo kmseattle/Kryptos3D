@@ -195,6 +195,7 @@ THE SOFTWARE.
        <button type="button" data-view="compass">Compass &amp; lodestone</button>
        <button type="button" data-view="compassdetail">Compass carving close-up</button>
        <button type="button" data-view="stones">Quartz &amp; red stones</button>
+       <button type="button" data-view="cornerslab">Corner slab</button>
        <button type="button" data-view="morse">Morse slabs</button>
     </div>
   </section>
@@ -229,7 +230,9 @@ THE SOFTWARE.
   <section>
     <h2>Expanded installation</h2>
     <label class="switch"><input type="checkbox" id="siteToggle" checked> Show expanded surroundings</label>
-    <label class="switch"><input type="checkbox" id="courtyardToggle" checked> Courtyard buildings, pool &amp; landscaping</label>
+    <label class="switch"><input type="checkbox" id="courtyardToggle" checked> Courtyard pool &amp; landscaping</label>
+    <label class="switch"><input type="checkbox" id="buildingsToggle" checked> Show buildings</label>
+    <label class="switch"><input type="checkbox" id="treesToggle" checked> Show trees</label>
     <label class="switch"><input type="checkbox" id="entranceToggle" checked> West entrance, compass &amp; Morse stones</label>
     <label class="switch"><input type="checkbox" id="labelsToggle"> Show explanatory site labels</label>
     <p class="small">The courtyard setting follows <a href="https://www.cia.gov/legacy/headquarters/kryptos-sculpture/" target="_blank" rel="noopener noreferrer">CIA</a> and <a href="https://www.voynich.net/Kryptos/" target="_blank" rel="noopener noreferrer">Gillogly</a> photographs: exposed aggregate concrete, restrained paving joints, glazed building wings, a low curved-roof pavilion and planted beds. Building dimensions, landscape positions and geographic bearings remain estimates. The sculpture and its sunlight controls are preserved.</p>
@@ -294,6 +297,7 @@ THE SOFTWARE.
     <p>The red foreground stone follows its broken outline and recesses in Jim Gillogly’s 1999 photographs; cropped surface details are credited to <a href="https://www.voynich.net/Kryptos/" target="_blank" rel="noopener noreferrer">Jim Gillogly, Kryptos Pix</a>.</p>
     <div>Icons made from <a href="https://www.onlinewebfonts.com/icon">svg icons</a> is licensed by CC BY 4.0</div>
     <p>Expanded site: includes a second reflecting pool, benches, planted courtyard, architectural context, granite Morse-code slabs, compass rose and adjacent lodestone. The 1991 <a href="https://www.nsa.gov/portals/75/documents/news-features/declassified-documents/cia-kryptos-sculpture/doc_8.pdf" target="_blank" rel="noopener noreferrer">NSA site diagram</a> and the <a href="https://www.cia.gov/legacy/headquarters/kryptos-sculpture/" target="_blank" rel="noopener noreferrer">CIA's installation description</a> guide their relative layout. The entrance is represented as a distinct west-side area, not the exact surveyed geographic position. Morse plate spacing and stone shapes are interpretive.</p>
+    <p>The courtyard buildings, cornered stone seats, local pink granite paving and rectangular picnic tables were refined using multiple photographs of the installation. Relative spacing is estimated from those views.</p>
     <p>Kryptos is © Jim Sanborn. This model isn't affiliated with the artist or the CIA.</p>
   </details>
   <p id="stats" class="small"></p>
@@ -4923,6 +4927,306 @@ function placeCourtyardStones(core,redStone) {
 
 // Courtyard materials and architecture follow the CIA and Gillogly photographs.
 // Building dimensions and planting positions are a visual reconstruction, not a survey.
+// Refinements from the supplied front, lower-screen and reverse courtyard photos.
+// Positions are photo-guided estimates; the sculpture and its water/stone assembly
+// retain their existing geometry and transforms.
+// Two distinct forms are visible in the supplied photograph and Gillogly's wide view:
+// an upright endstone on the left, and a broad fractured slab on the right.
+// Added from the user's plan sketch and the supplied Jim Sanborn papers photograph.
+// The outline and the circular grey surface mark are visual reconstructions.
+function addMissingCornerSlab(site,lowSpec=false){
+  const planters=site.environment.photoRefinements.planters;
+  const existing=site.courtyard.getObjectByName('Right background red stone slab');
+  const topSource=existing.getObjectByName('Right slab · broad continuous stone surface').material;
+  const edgeSource=existing.getObjectByName('Right slab · chipped stratified sides').material;
+  const outline=[[-.39,-.34],[-.13,-.39],[.13,-.35],[.25,-.40],[.43,-.29],[.82,-.31],[1.13,-.17],[1.30,.13],[1.23,.23],[.97,.20],[.67,.24],[.39,.28],[.35,.59],[.45,.79],[.31,.96],[.14,.91],[.02,1.07],[-.14,.98],[-.29,1.02],[-.34,.75],[-.37,.48],[-.43,.31],[-.36,.12],[-.45,-.12]];
+  const minX=-.45,maxX=1.30,minZ=-.40,maxZ=1.07,spanX=maxX-minX,spanZ=maxZ-minZ;
+  const size=lowSpec?512:1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const ctx=canvas.getContext('2d');ctx.drawImage(topSource.map.image,0,0,size,size);
+  // The photograph shows this weathered circular mark on the slab, off the corner.
+  const mark=new L(.02,0,.18),radius=.225,cx=(mark.x-minX)/spanX*size,cy=(maxZ-mark.z)/spanZ*size;
+  ctx.save();ctx.translate(cx,cy);ctx.scale(radius/spanX*size,radius/spanZ*size);
+  const grey=ctx.createRadialGradient(-.10,-.08,.06,0,0,1);
+  grey.addColorStop(0,'rgba(170,165,130,.88)');grey.addColorStop(.34,'rgba(169,166,136,.90)');grey.addColorStop(.54,'rgba(109,125,122,.88)');grey.addColorStop(.86,'rgba(102,125,129,.88)');grey.addColorStop(1,'rgba(118,130,125,0)');
+  ctx.fillStyle=grey;ctx.fillRect(-1.05,-1.05,2.1,2.1);
+  const random=Rs(211157);for(let j=0;j<550;j++){const a=random()*Math.PI*2,r=Math.sqrt(random())*.94;ctx.fillStyle=j%3?'rgba(59,70,66,.12)':'rgba(204,194,161,.15)';ctx.beginPath();ctx.ellipse(Math.cos(a)*r,Math.sin(a)*r,.008+random()*.015,.006+random()*.013,random()*3,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle='rgba(55,58,51,.62)';ctx.beginPath();ctx.ellipse(-.08,.01,.09,.065,-.4,0,Math.PI*2);ctx.fill();ctx.restore();
+  const topMaterial=topSource.clone();topMaterial.map=mi(canvas,true,false);topMaterial.bumpMap=topMaterial.map;topMaterial.bumpScale=.0014;topMaterial.name='Corner slab · red stone and photographed grey mark';
+  const edgeMaterial=edgeSource.clone();edgeMaterial.vertexColors=false;edgeMaterial.name='Corner slab · naturally broken red sides';
+  const group=new Ke();group.name='Missing horizontal red slab · bench corner';group.position.set(3.60,.412,-5.05);group.rotation.y=-Math.PI/2;
+  // The latest overhead photograph identifies the rear right-hand bench bend.
+  group.userData={installationFeature:'cornerRedSlab',horizontal:true,benchCorner:[3.60,-5.05],reference:'Upper-right bench bend circled in user overhead image dated 2026-11-21; archive photograph for surface'};
+  const mesh=siteStonePrism('Irregular corner-spanning red slab',outline,(x,z)=>.145+.006*Math.sin(x*4.8+z*2.6)+.002*Math.sin(x*17-z*13),0,edgeMaterial);
+  const geometry=mesh.geometry.toNonIndexed(),p=geometry.attributes.position,uv=geometry.attributes.uv;
+  geometry.clearGroups();const topIndices=[],edgeIndices=[];
+  for(let i=0;i<p.count;i+=3){
+    const a=new L().fromBufferAttribute(p,i),b=new L().fromBufferAttribute(p,i+1),c=new L().fromBufferAttribute(p,i+2);
+    const normal=b.clone().sub(a).cross(c.clone().sub(a)).normalize(),isTop=normal.y>.5&&(a.y+b.y+c.y)/3>.10;
+    for(let j=0;j<3;j++){const x=p.getX(i+j),y=p.getY(i+j),z=p.getZ(i+j);if(isTop||normal.y<-.5)uv.setXY(i+j,(x-minX)/spanX,(z-minZ)/spanZ);else uv.setXY(i+j,Math.abs(normal.z)>Math.abs(normal.x)?(x-minX)/spanX:(z-minZ)/spanZ,y/.15);}
+    (isTop?topIndices:edgeIndices).push(i,i+1,i+2);
+  }
+  geometry.setIndex([...topIndices,...edgeIndices]);geometry.addGroup(0,topIndices.length,0);geometry.addGroup(topIndices.length,edgeIndices.length,1);
+  mesh.geometry.dispose();mesh.geometry=geometry;mesh.material=[topMaterial,edgeMaterial];mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);planters.add(group);
+  // Trim the intersecting coping at the adjacent corner so its top cannot flicker.
+  planters.traverse(o=>{if(o.name==='Narrow pale planter coping'&&Math.abs(o.position.x+3.7)<.001&&Math.abs(o.position.z+4.2)<.001){o.scale.x=(o.geometry.parameters.width-.34)/o.geometry.parameters.width;o.userData.cornerClearance=true;}});
+  // Move the complete grass clump that was rooted on this bench into the bed.
+  const grass=site.environment.setting.getObjectByName('Irregular grass tussocks');
+  const positions=grass.geometry.attributes.position,clumpVertices=(lowSpec?65:110)*6;
+  for(let i=15*clumpVertices;i<16*clumpVertices;i++)positions.setXYZ(i,positions.getX(i)+1,positions.getY(i),positions.getZ(i)-1);
+  positions.needsUpdate=true;grass.geometry.computeBoundingSphere();
+  const target=new L(3.25,.55,-4.65);
+  site.views.cornerslab={pos:target.clone().add(new L(-1.5,4.0,1.6)),target,fit:1.6};
+  site.environment.photoRefinements.cornerSlab=group;
+  return group;
+}
+
+function rebuildPhotographedStoneSeats(parent,concrete,lowSpec=false){
+  const grain=(kind)=>{
+    const width=lowSpec?384:768,height=kind==='top'?width:256;
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const context=canvas.getContext('2d'),pixels=context.createImageData(width,height),random=Rs(kind==='top'?211:kind==='edge'?571:812);
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const n=random(),fine=(random()-.5)*26,layer=kind==='edge'?Math.sin(y*.19+Math.sin(x*.011)*1.7)*9+Math.sin(y*.55+x*.006)*4:0;
+      const base=kind==='top'?[174,110,86]:kind==='edge'?[139,73,54]:[116,114,102];
+      const mineral=n<.08?-28:n>.94?39:0,index=(y*width+x)*4;
+      for(let k=0;k<3;k++)pixels.data[index+k]=Math.max(0,Math.min(255,base[k]+fine+mineral+layer));
+      pixels.data[index+3]=255;
+    }
+    context.putImageData(pixels,0,0);
+    if(kind==='top'){
+      const random=Rs(517);for(let j=0;j<3;j++){context.strokeStyle='rgba(200,187,164,.18)';context.lineWidth=.6+random()*1.6;context.beginPath();context.moveTo(random()*width,random()*height);context.bezierCurveTo(random()*width,random()*height,random()*width,random()*height,random()*width,random()*height);context.stroke();}
+    }
+    return mi(canvas,true,true);
+  };
+  const topMap=grain('top'),edgeMap=grain('edge'),weatheredMap=grain('weathered');
+  const topMaterial=new Ce({map:topMap,bumpMap:topMap,bumpScale:.0018,roughness:.82,metalness:0,name:'Weathered warm red stone seat top'});
+  const edgeMaterial=new Ce({map:edgeMap,bumpMap:edgeMap,bumpScale:.0035,roughness:.91,metalness:0,flatShading:true,vertexColors:true,name:'Broken layered red stone edge'});
+  const weatheredMaterial=new Ce({map:weatheredMap,bumpMap:weatheredMap,bumpScale:.002,roughness:.91,name:'Weathered upright red endstone face'});
+  const box=(group,name,x,y,z,w,h,d,material)=>{const mesh=new ae(new dn(w,h,d),material);mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);return mesh;};
+  // The right-hand stone is one solid, roughly rectangular slab, not a narrow L.
+  const right=new Ke();right.name='Right background red stone slab';right.userData.isBackgroundRedStone=true;
+  right.position.set(4.72,.412,-2.08);parent.add(right);
+  const width=2.45,depth=1.30,height=.18,outline=[];
+  const corners=[[-.50,-.50],[.43,-.50],[.50,-.38],[.49,.41],[.40,.50],[-.40,.49],[-.51,.34]];
+  for(let edge=0;edge<corners.length;edge++){
+    const a=corners[edge],b=corners[(edge+1)%corners.length],length=Math.hypot((b[0]-a[0])*width,(b[1]-a[1])*depth),steps=Math.max(1,Math.ceil(length/.22));
+    for(let j=0;j<steps;j++){const t=j/steps,x=(a[0]+(b[0]-a[0])*t)*width,z=(a[1]+(b[1]-a[1])*t)*depth;outline.push([x+Math.sin(edge*3.4+j*1.9)*.009,z+Math.cos(edge*4.2+j*2.1)*.012]);}
+  }
+  const positions=[],uv=[],colours=[],indices=[],n=outline.length;
+  const fractions=[0,.20,.47,.76,1],offsets=[-.008,.003,-.006,-.002,0];
+  let perimeter=0;const distance=[0];for(let i=1;i<n;i++){perimeter+=Math.hypot(outline[i][0]-outline[i-1][0],outline[i][1]-outline[i-1][1]);distance.push(perimeter);}
+  for(let row=0;row<fractions.length;row++)for(let i=0;i<n;i++){
+    const [x,z]=outline[i],front=z>depth*.25,offset=offsets[row]+Math.sin(x*17+i*.7+row)*.004+(front&&x<-.55&&row<3?-.045*(1-Math.abs(fractions[row]-.25)*1.4):0);
+    const nx=Math.abs(x)>width*.42?Math.sign(x):0,nz=front?1:z< -depth*.40?-1:0;
+    positions.push(x+nx*offset,fractions[row]*height+Math.sin(x*11+z*9)*.004,z+nz*offset);
+    uv.push(distance[i]/width,fractions[row]);const shade=[.82,.90,.86,.92,1][row];colours.push(shade,shade,shade);
+  }
+  for(let row=0;row<fractions.length-1;row++)for(let i=0;i<n;i++){const j=(i+1)%n,a=row*n+i,b=row*n+j,c=(row+1)*n+i,d=(row+1)*n+j;indices.push(a,c,b,b,c,d);}
+  const geometry=new Se();geometry.setAttribute('position',new ne(new Float32Array(positions),3));geometry.setAttribute('uv',new ne(new Float32Array(uv),2));geometry.setAttribute('color',new ne(new Float32Array(colours),3));geometry.setIndex(indices);geometry.computeVertexNormals();
+  const edge=new ae(geometry,edgeMaterial);edge.name='Right slab · chipped stratified sides';edge.castShadow=true;edge.receiveShadow=true;right.add(edge);
+  const topPositions=[],topUV=[],topIndices=[];
+  outline.forEach(([x,z])=>{topPositions.push(x,height+Math.sin(x*11+z*9)*.004,z);topUV.push(x/width+.5,z/depth+.5);});
+  const triangles=En.triangulateShape(outline.map(([x,z])=>new ht(x,z)),[]);
+  for(const [a,b,c] of triangles){const A=outline[a],B=outline[b],C=outline[c],cross=(B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]);if(cross>0)topIndices.push(a,c,b);else topIndices.push(a,b,c);}
+  const topGeometry=new Se();topGeometry.setAttribute('position',new ne(new Float32Array(topPositions),3));topGeometry.setAttribute('uv',new ne(new Float32Array(topUV),2));topGeometry.setIndex(topIndices);topGeometry.computeVertexNormals();const top=new ae(topGeometry,topMaterial);top.name='Right slab · broad continuous stone surface';top.castShadow=true;top.receiveShadow=true;right.add(top);
+  // A narrow recessed foot and a wider concrete bearer are visible below the slab.
+  box(parent,'Right stone seat · pale concrete bearer',4.72,.273,-1.94,2.36,.274,.63,concrete);
+  box(parent,'Right stone seat · recessed concrete foot',4.72,.076,-1.95,2.24,.152,.48,concrete);
+  box(parent,'Right stone seat · short corner return',3.68,.273,-2.42,.36,.274,1.22,concrete);
+  // The left bench has a substantial pale beam, with its red stone stood on end.
+  box(parent,'Left bench · pale horizontal beam',-5.10,.325,-3.34,2.25,.30,.47,concrete);
+  box(parent,'Left bench · recessed concrete foot',-5.10,.10,-3.36,2.18,.20,.34,concrete);
+  const left=new Ke();left.name='Left background upright red endstone';left.userData.isBackgroundRedStone=true;
+  left.position.set(-6.35,.02,-3.49);parent.add(left);
+  const endMaterial=edgeMaterial.clone();endMaterial.vertexColors=false;
+  const endGeometry=new dn(.35,.61,.66,1,4,2),endPositions=endGeometry.attributes.position;
+  for(let i=0;i<endPositions.count;i++){const x=endPositions.getX(i),y=endPositions.getY(i),z=endPositions.getZ(i);endPositions.setXYZ(i,x+Math.sin(y*13+z*9)*.004,y+.305+Math.sin(x*19+z*11)*.004,z+Math.sin(y*16+x*11)*.004);}
+  endGeometry.computeVertexNormals();
+  const endstone=new ae(endGeometry,[endMaterial,endMaterial,weatheredMaterial,endMaterial,weatheredMaterial,endMaterial]);endstone.name='Left endstone · weathered face and exposed red body';endstone.castShadow=true;endstone.receiveShadow=true;left.add(endstone);
+  right.userData.reference='Broad red slab above the right planter corner in the supplied front photograph';left.userData.reference='Upright left endstone visible in Gillogly wideview.jpg';
+  return {left,right};
+}
+
+function refinePhotoCourtyard(core,site,lowSpec=false){
+  const environment=site.environment,setting=environment.setting;
+  const box=(parent,name,x,y,z,w,h,d,material,angle=0)=>{
+    const mesh=new ae(new dn(w,h,d),material);mesh.name=name;
+    mesh.position.set(x,y,z);mesh.rotation.y=angle;
+    mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  };
+  const instances=(parent,name,records,material)=>{
+    const mesh=new js(new dn(1,1,1),material,records.length),matrix=new le();
+    mesh.name=name;
+    records.forEach((v,i)=>{
+      matrix.compose(new L(v[0],v[1],v[2]),new Fe(),new L(v[3],v[4],v[5]));
+      mesh.setMatrixAt(i,matrix);
+    });
+    mesh.instanceMatrix.needsUpdate=true;mesh.receiveShadow=true;
+    parent.add(mesh);return mesh;
+  };
+  const materials={};
+  environment.office.traverse(o=>{
+    if(o.material?.name)materials[o.material.name]=o.material;
+  });
+  const stone=materials['Pale rose-grey architectural concrete'];
+  const frame=materials['Light anodised window frames'];
+  const glass=materials['Blue-green reflective courtyard glazing'];
+  const reveal=materials['Deep window reveals'];
+  const seatMaterial=site.courtyard.getObjectByName('Red granite seat behind copper screen').material;
+  const soil=setting.getObjectByName('Raised planting bed').material;
+
+  // The two wings share a real inside corner. The lower wing ends against the
+  // taller return, rather than leaving two unrelated office blocks in the distance.
+  const office=environment.office;office.clear();
+  office.name='Connected lower and taller courtyard wings';
+  const cornerX=12.8,cornerZ=-8.9,lowHeight=11.4,tallHeight=22.8;
+  const facade=(name,width,height,levels)=>{
+    const group=new Ke();group.name=name;office.add(group);
+    const bars=[],step=height/levels;
+    box(group,'Deep facade backing',0,height/2,-.30,width,height,.52,reveal);
+    for(let level=0;level<levels;level++){
+      const base=level*step,isGround=level===0;
+      // The ground floor is visibly recessed under the broad concrete band.
+      const sill=isGround?.08:.24,band=isGround?.79:.65;
+      const glazingHeight=step-sill-band;
+      box(group,'Continuous green-grey window band',0,base+sill+glazingHeight/2,isGround?-.11:.035,width-.10,glazingHeight,.07,glass);
+      box(group,'Pale concrete floor band',0,base+step-band/2,.19,width,band,.55,stone);
+      box(group,'Narrow facade shadow joint',0,base+step-band-.025,.22,width,.034,.08,reveal);
+      box(group,'Light window sill',0,base+sill,.12,width,.065,.24,frame);
+      const bay=1.03;
+      for(let x=-width/2+.36;x<width/2;x+=bay){
+        bars.push([x,base+sill+glazingHeight/2,.13,.045,glazingHeight,.17]);
+        // Darker piers and deeper glass at street level are distinct from the
+        // fine mullion grid of the upper floors.
+        if(isGround&&Math.round((x+width/2)/bay)%3===0)
+          box(group,'Ground-floor concrete pier',x,glazingHeight/2,.09,.18,glazingHeight,.40,stone);
+      }
+      if(!isGround)bars.push([0,base+sill+glazingHeight*.71,.13,width,.032,.16]);
+    }
+    instances(group,'Fine light glazing mullions',bars,frame);
+    box(group,'Flat concrete parapet',0,height+.16,-.05,width,.32,.65,stone);
+    group.userData={levels,width,height};return group;
+  };
+  const rearWidth=57.4,returnLength=32;
+  box(office,'Lower wing solid volume',cornerX-rearWidth/2,lowHeight/2,cornerZ-8,rearWidth,lowHeight,16,stone);
+  const rear=facade('Lower wing courtyard facade',rearWidth,lowHeight,3);
+  rear.position.set(cornerX-rearWidth/2,0,cornerZ);
+  box(office,'Taller wing solid volume',cornerX+8,tallHeight/2,cornerZ+returnLength/2,16,tallHeight,returnLength,stone);
+  const right=facade('Taller wing courtyard return',returnLength,tallHeight,6);
+  right.position.set(cornerX,0,cornerZ+returnLength/2);right.rotation.y=-Math.PI/2;
+  box(office,'Continuous inside corner pier',cornerX-.08,lowHeight/2,cornerZ+.07,.30,lowHeight,.30,stone);
+  office.userData={reference:'Supplied wide courtyard photographs',insideCorner:[cornerX,cornerZ],lowerLevels:3,returnLevels:6};
+
+  // Remove the long straight proxy wall, its separate seats and the old soil box.
+  const removeNames=new Set(['Low pale planter wall behind sculpture',
+    'Red granite seat behind copper screen','Planter coping','Raised planting bed',
+    'Planter side retaining wall','Planter front wall extension','Round courtyard picnic table']);
+  const obsolete=[];site.courtyard.traverse(o=>{if(removeNames.has(o.name))obsolete.push(o);});
+  for(const object of obsolete)object.removeFromParent();
+  const planters=new Ke();planters.name='Cornered pale concrete planters and stone seats';setting.add(planters);
+  const bed=(name,polygon)=>{
+    const mesh=siteStonePrism(name,polygon,.365,.008,soil);planters.add(mesh);return mesh;
+  };
+  bed('Left raised planting bed',[[-16.5,-8.58],[-3.70,-8.58],[-3.70,-3.35],[-16.5,-3.35]]);
+  bed('L-shaped right planting bed',[[-3.70,-8.58],[7.03,-8.58],[7.03,-1.75],[3.60,-1.75],[3.60,-5.05],[-3.70,-5.05]]);
+  const wall=(name,a,b)=>{
+    const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
+    box(planters,name,(a[0]+b[0])/2,.185,(a[1]+b[1])/2,length,.37,.24,stone,-Math.atan2(dz,dx));
+    box(planters,'Narrow pale planter coping',(a[0]+b[0])/2,.390,(a[1]+b[1])/2,length+.04,.040,.30,stone,-Math.atan2(dz,dx));
+  };
+  wall('Left planter front',[-16.5,-3.35],[-3.70,-3.35]);
+  wall('Left planter corner return',[-3.70,-3.35],[-3.70,-5.05]);
+  wall('Recessed rear planting edge',[-3.70,-5.05],[3.60,-5.05]);
+  wall('Right planter inner return',[3.60,-5.05],[3.60,-1.75]);
+  wall('Right planter front',[3.60,-1.75],[7.03,-1.75]);
+  wall('Right planter end',[7.03,-1.75],[7.03,-8.58]);
+  const stoneSeats=rebuildPhotographedStoneSeats(planters,stone,lowSpec);
+
+  // Keep all planting rooted inside the new beds, including the tree nearest
+  // the building return. No changes are made to the separate lawn/pond planting.
+  const treeLeaves=lowSpec?950:1900,shrubLeaves=lowSpec?260:480;
+  for(const [kind,mesh] of [['leaves',environment.leafMesh],['branches',environment.branchMesh]]){
+    const matrix=new le(),p=new L(),q=new Fe(),scale=new L();
+    for(let i=0;i<mesh.count;i++){
+      mesh.getMatrixAt(i,matrix);matrix.decompose(p,q,scale);
+      p.y-=.275;
+      // Move complete plants, keeping every twig attached to its own crown.
+      const lastTree=kind==='leaves'?i>=4*treeLeaves&&i<5*treeLeaves:i>=108&&i<135;
+      const lastShrub=kind==='leaves'?i>=5*treeLeaves+4*shrubLeaves:i>=175;
+      if(lastTree)p.x-=1.25;
+      if(lastShrub)p.x-=1.5;
+      matrix.compose(p,q,scale);mesh.setMatrixAt(i,matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();
+  }
+  const grasses=setting.getObjectByName('Irregular grass tussocks');
+  const grassPosition=grasses.geometry.getAttribute('position');
+  for(let i=0;i<grassPosition.count;i++){
+    let x=grassPosition.getX(i),z=grassPosition.getZ(i);
+    if(z> -4.9&&z< -3.8){
+      grassPosition.setY(i,grassPosition.getY(i)-.255);
+      if(x> -3.8&&x<3.55)z-=1.15;
+      if(x>6.85)x-=1.1;
+      grassPosition.setX(i,x);grassPosition.setZ(i,z);
+    }
+  }
+  grassPosition.needsUpdate=true;grasses.geometry.computeBoundingSphere();
+
+  // The close-up shows a local pink granite inset, surrounded by larger poured
+  // concrete slabs. The inset does not spread into a courtyard-wide tile grid.
+  const paving=new Ke();paving.name='Local rose granite inset around the sculpture';core.group.add(paving);
+  const tileSize=.60,joint=.008,columns=15,rows=9;
+  const c=document.createElement('canvas');c.width=c.height=lowSpec?384:640;
+  const context=c.getContext('2d'),pixels=context.createImageData(c.width,c.height),random=Rs(21112026);
+  for(let i=0;i<pixels.data.length;i+=4){
+    const r=random(),grain=(random()-.5)*29;
+    const base=r<.17?[78,79,77]:r>.87?[219,213,201]:[181,155,151];
+    pixels.data[i]=Math.max(0,Math.min(255,base[0]+grain));
+    pixels.data[i+1]=Math.max(0,Math.min(255,base[1]+grain));
+    pixels.data[i+2]=Math.max(0,Math.min(255,base[2]+grain));pixels.data[i+3]=255;
+  }
+  context.putImageData(pixels,0,0);
+  const graniteMap=mi(c,true,true);
+  const granite=new Ce({map:graniteMap,bumpMap:graniteMap,bumpScale:.0018,roughness:.88,name:'Fine pink and grey speckled granite'});
+  const grout=new Ce({color:0xaaa59a,roughness:.99,name:'Fine pale stone paving joints'});
+  box(paving,'Flush granite inset joint bed',.60,.0035,.30,columns*tileSize,.007,rows*tileSize,grout);
+  const slabs=new js(new dn(tileSize-joint,.005,tileSize-joint),granite,columns*rows),matrix=new le();
+  slabs.name='Small rose granite paving slabs';const tint=granite.color.clone();
+  for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){
+    const i=row*columns+column;
+    matrix.makeTranslation(.60+(column-(columns-1)/2)*tileSize,.008,.30+(row-(rows-1)/2)*tileSize);
+    slabs.setMatrixAt(i,matrix);tint.setScalar(.94+random()*.10);slabs.setColorAt(i,tint);
+  }
+  slabs.instanceMatrix.needsUpdate=true;slabs.instanceColor.needsUpdate=true;slabs.receiveShadow=true;paving.add(slabs);
+
+  // Rectangular slatted picnic tables and paired straight benches are clearly
+  // visible in the reverse photograph, with the courtyard open around them.
+  const furniture=new Ke();furniture.name='Rows of rectangular courtyard picnic tables';setting.add(furniture);
+  const tabletop=new Ce({color:0x393d35,roughness:.86,metalness:.07,name:'Dark weathered picnic table slats'});
+  const tableframe=new Ce({color:0x272e29,roughness:.68,metalness:.5,name:'Dark metal picnic table frames'});
+  const picnic=(x,z)=>{
+    const group=new Ke();group.name='Rectangular courtyard picnic table';group.position.set(x,0,z);furniture.add(group);
+    for(let j=0;j<5;j++)box(group,'Straight tabletop slat',0,.753,(j-2)*.145,1.87,.055,.132,tabletop);
+    for(const sign of [-1,1]){
+      for(let j=0;j<2;j++)box(group,'Straight bench slat',0,.445,sign*.69+(j-.5)*.145,1.99,.055,.132,tabletop);
+      for(const end of [-.67,.67]){
+        box(group,'Picnic table leg',end,.357,sign*.25,.055,.69,.055,tableframe);
+        box(group,'Bench leg',end,.205,sign*.69,.055,.41,.055,tableframe);
+      }
+    }
+    for(const end of [-.67,.67]){
+      box(group,'Picnic frame cross member',end,.295,0,.065,.065,1.65,tableframe);
+      box(group,'Tabletop underside brace',end,.706,0,.055,.055,.79,tableframe);
+    }
+    group.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  };
+  for(const z of [4.4,7.8,11.2])for(const x of [-6.2,-9.6,-13.0])picnic(x,z);
+  // Keep the courtyard camera on the open side of the newly connected wing.
+  site.views.courtyardwide={pos:new L(-12,14,23),target:new L(-.7,1.2,3),fit:17};
+  environment.photoRefinements={office,planters,paving,furniture,stoneSeats};
+  return environment.photoRefinements;
+}
+
 function refineKryptosEnvironment(core,site,lowSpec=false){
   const random=Rs(20411990),up=new L(0,1,0),identity=new Fe();
   const setting=new Ke();setting.name='Courtyard architecture and planting';site.courtyard.add(setting);
@@ -5259,15 +5563,52 @@ function buildKryptosSiteAddon(lowSpec=false,core={}) {
   return {root,courtyard,entrance,architecture,labels,phrases,views,compassAnchor,needleDirection,lodestonePosition,carving,
     showAll(v){root.visible=!!v;},showCourtyard(v){courtyard.visible=!!v;},showEntrance(v){entrance.visible=!!v;architecture.visible=!!v;},showLabels(v){labels.visible=!!v;}};
 }
+function addEnvironmentVisibility(site,lowSpec=false){
+  const environment=site.environment,setting=environment.setting;
+  const trees=new Ke();trees.name='Switchable courtyard trees';setting.add(trees);
+  const shrubs=new Ke();shrubs.name='Low courtyard shrubs';setting.add(shrubs);
+  const splitTrees=(source,treeCount,treeName,shrubName)=>{
+    const shrubCount=source.count-treeCount;
+    const shrubMesh=new js(source.geometry,source.material,shrubCount);
+    shrubMesh.name=shrubName;shrubMesh.castShadow=source.castShadow;
+    shrubMesh.receiveShadow=source.receiveShadow;shrubMesh.frustumCulled=source.frustumCulled;
+    const matrix=new le(),colour=source.material.color.clone();
+    for(let i=0;i<shrubCount;i++){
+      source.getMatrixAt(treeCount+i,matrix);shrubMesh.setMatrixAt(i,matrix);
+      if(source.instanceColor){source.getColorAt(treeCount+i,colour);shrubMesh.setColorAt(i,colour);}
+    }
+    shrubMesh.instanceMatrix.needsUpdate=true;
+    if(shrubMesh.instanceColor)shrubMesh.instanceColor.needsUpdate=true;
+    shrubMesh.computeBoundingSphere();shrubs.add(shrubMesh);
+    source.count=treeCount;source.name=treeName;source.computeBoundingSphere();trees.add(source);
+    return shrubMesh;
+  };
+  environment.shrubLeaves=splitTrees(environment.leafMesh,5*(lowSpec?950:1900),'Tree leaves','Shrub leaves');
+  environment.shrubBranches=splitTrees(environment.branchMesh,135,'Tree trunks and branches','Shrub branches');
+  environment.trees=trees;environment.shrubs=shrubs;
+  environment.visibility={buildings:true,trees:true};
+  site.showBuildings=v=>{
+    environment.visibility.buildings=!!v;
+    environment.office.visible=!!v;environment.pavilion.visible=!!v;
+    site.architecture.visible=!!v&&site.entrance.visible;
+  };
+  site.showTrees=v=>{environment.visibility.trees=!!v;trees.visible=!!v;};
+  const showEntrance=site.showEntrance.bind(site);
+  site.showEntrance=v=>{showEntrance(v);site.showBuildings(environment.visibility.buildings);};
+  return environment.visibility;
+}
+
 async function $x(){let i=performance.now(),t=fe("scene"),e;try{e=new za({canvas:t,antialias:!0,powerPreference:"high-performance"})}catch{zd("This browser could not start WebGL, which the 3D model needs. Try a current version of Edge, Chrome, Firefox or Safari.");return}e.setPixelRatio(Math.min(window.devicePixelRatio||1,Ps?1.5:2)),e.shadowMap.enabled=!0,e.shadowMap.type=Ei,e.shadowMap.autoUpdate=!1,e.toneMapping=Sr,e.toneMappingExposure=.92;let n=new Hn,s=new Ge(38,1,.05,3e3);s.position.set(-.75,1.85,9.4);let r=new Ha(s,t);r.target.set(-.2,1.65,.05),r.enableDamping=!0,r.dampingFactor=.08,r.minDistance=.35,r.maxDistance=165,r.maxPolarAngle=Math.PI*.495,r.autoRotateSpeed=.55,r.update(),window.innerWidth<=760&&(fe("panel").dataset.open="false",fe("panelToggle").setAttribute("aria-expanded","false"),fe("panelToggle").textContent="Show controls");let o=1.6,a=()=>{let N=t.clientWidth||window.innerWidth,G=t.clientHeight||window.innerHeight;e.setSize(N,G,!1);let Y=document.getElementById("panel"),gt=Y&&Y.dataset.open!=="false"&&N>760?Math.min(360,N*.3):0;o=(N-gt)/G,s.fov=o<1?Math.min(55,38+(1-o)*30):38,gt>0?(s.aspect=(N+gt)/G,s.setViewOffset(N+gt,G,gt,0,N,G)):(s.aspect=N/G,s.clearViewOffset()),s.updateProjectionMatrix()};a(),new ResizeObserver(a).observe(t);let c=null,l=Bd();if(l){Ls(.03,"Reading your letter font\u2026"),await Fi();try{Ql(await nh(l.buffer,l.name))}catch(N){sh(),c="Your saved font couldn't be read, so the stand-in letters are back. "+(N&&N.message?N.message:"")}}Ls(.05,"Weathering the copper\u2026"),await Fi();let h=Pd(Ps?1024:2048,Ps?512:1024,St.length,St.height,Cd()),d=performance.now(),u=new Ce({map:h.today.map,roughnessMap:h.today.orm,metalnessMap:h.today.orm,roughness:1,metalness:1,envMapIntensity:.9,name:"Copper (weathered)"}),f=new Ce({color:4860444,roughness:.62,metalness:.7,envMapIntensity:.35,name:"Copper (cut edges)"}),m=[u,f];Ls(.18,"Cutting 1,736 letters through copper\u2026"),await Fi();let _=new URLSearchParams(location.search).get("ctrl"),p=_?new Nr(St.length,8192,_.split(";").map(N=>N.split(",").map(Number))):new Nr(St.length),g=await th(p,N=>Ls(.18+N*.5),Fi),M=performance.now(),T=new Ke;T.name="Copper screen";let y=g.plates.map(N=>{let G=new ae(N.geometry,[u,f]);return G.name=`${N.side==="cipher"?"Ciphertext":"Tableau"} plate (${N.upper?"upper":"lower"})`,G.castShadow=!0,G.receiveShadow=!0,T.add(G),G}),S=new ae(g.inlay,new yn({vertexColors:!0,side:De,toneMapped:!1}));S.visible=!1,S.name="Section colours",T.add(S);let E=new Se;E.setAttribute("position",g.inlay.attributes.position),E.setIndex(g.inlay.index),E.boundingSphere=g.inlay.boundingSphere.clone();let A=new ae(E,new yn({color:16773544,side:De,toneMapped:!1}));A.visible=!1,A.renderOrder=2,T.add(A),n.add(T),Ls(.72,"Placing the petrified tree, granite and pool\u2026"),await Fi();let x=new URLSearchParams(location.search),b=N=>x.get(N)?x.get(N).split(",").map(Number):void 0,C=Fd(p,{lowSpec:Ps,pool:b("pool"),quartz:b("quartz"),rock:b("rock")});n.add(C.group);
    const foregroundStone=await buildForegroundRedStone(Ps);
    const oldForegroundRock=C.exportable.getObjectByName('Stratified rock');
    if(oldForegroundRock){oldForegroundRock.removeFromParent();oldForegroundRock.geometry.dispose();oldForegroundRock.material.dispose();}
    C.exportable.add(foregroundStone);
    placeCourtyardStones(C,foregroundStone);
-   const siteAddon=buildKryptosSiteAddon(Ps,C);refineKryptosEnvironment(C,siteAddon,Ps);n.add(siteAddon.root);
+   const siteAddon=buildKryptosSiteAddon(Ps,C);refineKryptosEnvironment(C,siteAddon,Ps);refinePhotoCourtyard(C,siteAddon,Ps);addMissingCornerSlab(siteAddon,Ps);addEnvironmentVisibility(siteAddon,Ps);n.add(siteAddon.root);
    const qSite=id=>fe(id);
    qSite('siteToggle').addEventListener('change',()=>siteAddon.showAll(qSite('siteToggle').checked));
+   qSite('buildingsToggle').addEventListener('change',()=>siteAddon.showBuildings(qSite('buildingsToggle').checked));
+   qSite('treesToggle').addEventListener('change',()=>siteAddon.showTrees(qSite('treesToggle').checked));
    qSite('courtyardToggle').addEventListener('change',()=>siteAddon.showCourtyard(qSite('courtyardToggle').checked));
    qSite('entranceToggle').addEventListener('change',()=>siteAddon.showEntrance(qSite('entranceToggle').checked));
    qSite('labelsToggle').addEventListener('change',()=>siteAddon.showLabels(qSite('labelsToggle').checked));
@@ -5287,18 +5628,18 @@ Nt.compass={pos:new L(-10.9,7.6,-61.7),target:new L(-10.9,.3,-64.5),fit:1.8};
 Nt.morse={pos:new L(.3,2.6,-68.5),target:new L(3.9,1,-68.7)};
 Object.assign(Nt,siteAddon.views);Nt.front.fit=Math.max(Nt.front.fit,4.8);r.maxDistance=Math.max(r.maxDistance,260);
 let ut=null;function Tt(N,G){let Y=Nt[N];if(!Y)return;
-   if(['site','entrance','morse','compass','compassdetail','courtyardwide','pond'].includes(N)){
+   if(['site','entrance','morse','compass','compassdetail','courtyardwide','pond','cornerslab'].includes(N)){
      qSite('siteToggle').checked=true;siteAddon.showAll(true);
      if(['site','entrance','morse','compass','compassdetail'].includes(N)){
        qSite('entranceToggle').checked=true;siteAddon.showEntrance(true);
      }
-     if(['site','courtyardwide','pond'].includes(N)){
+     if(['site','courtyardwide','pond','cornerslab'].includes(N)){
        qSite('courtyardToggle').checked=true;siteAddon.showCourtyard(true);
      }
    }
    document.querySelectorAll('.feature-nav [data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===N)));
    const featureLocation=fe('featureLocation');
-   const featureLocations={redstone:'Courtyard · layered red stone beside the basin',tree:'Courtyard · petrified wood beside the copper screen',stones:'Courtyard · angular white quartz and red stone beside the basin',morse:'Entrance · Morse cut through horizontal copper seams',compass:'Entrance · needle aligned toward the lodestone; geographic bearing approximate',compassdetail:'Actual compass carving · geographic bearing approximate'};
+   const featureLocations={cornerslab:'Courtyard · horizontal red slab on the bench corner',redstone:'Courtyard · layered red stone beside the basin',tree:'Courtyard · petrified wood beside the copper screen',stones:'Courtyard · angular white quartz and red stone beside the basin',morse:'Entrance · Morse cut through horizontal copper seams',compass:'Entrance · needle aligned toward the lodestone; geographic bearing approximate',compassdetail:'Actual compass carving · geographic bearing approximate'};
    featureLocation.textContent=featureLocations[N]||'';featureLocation.hidden=!featureLocations[N];
    n.fog.far=['site','entrance','morse','compass','compassdetail'].includes(N)?200:75;
    n.fog.near=['site','entrance','morse','compass','compassdetail'].includes(N)?65:26;Y.hour!==void 0&&yt.day&&Math.abs(yt.hour-Y.hour)>1.5&&(yt.hour=Y.hour,qt(),k(!0)),r.autoRotate=!1,fe("autorotate").checked=!1;let pt=Y.pos;if(Y.fit){let gt=Y.pos.clone().sub(Y.target),Qt=Y.fit/(Math.tan(s.fov*Math.PI/360)*o);gt.length()< Qt&&gt.setLength(Qt),pt=Y.target.clone().add(gt)}if(G||Yx){s.position.copy(pt),r.target.copy(Y.target),r.update(),ut=null;return}ut={t:0,fromP:s.position.clone(),fromT:r.target.clone(),toP:pt.clone(),toT:Y.target.clone()}}r.addEventListener("start",()=>{ut=null});let Yt=new ae(Ed(p),new yn({side:De}));Yt.updateMatrixWorld(!0);let it=[];C.exportable.traverse(N=>{N.isMesh&&N.name!=="Water"&&N.name!=="Bubbler"&&it.push(N)});let at=new vr,lt=new ht,ct=null,ft=!1,Ut=null,Pt=fe("tip");t.addEventListener("pointermove",N=>{ct={x:N.clientX,y:N.clientY,type:N.pointerType},ft=!0}),t.addEventListener("pointerleave",()=>{ct=null,ft=!0}),t.addEventListener("pointerdown",N=>{N.pointerType!=="mouse"&&(ct={x:N.clientX,y:N.clientY,type:N.pointerType},ft=!0)});function Gt(N){let G=[];if(N.side==="cipher"){let Y=Xa[N.section];G.push(`\x3cb>${N.section}\x3c/b> \xB7 character ${N.index} of ${Y.length} \xB7 row ${N.row+1}, position ${N.col+1}`),N.ch==="?"?G.push(N.section==="K3"&&N.index===Y.length?"The \u201C?\u201D between K3 and K4":"Question mark, carried through unencrypted"):N.section==="K1"||N.section==="K2"?(G.push(`\u201C${N.ch}\u201D with key letter ${N.key} \u2192 \x3cb>${N.plain}\x3c/b>`),N.section==="K2"&&N.index>=365&&G.push("Sanborn left out an S near here, so this decrypts as \u201CID BY ROWS\u201D; the intended ending is \u201CX LAYER TWO\u201D.")):N.section==="K3"?G.push(`\u201C${N.ch}\u201D \xB7 K3 is a transposition: these letters are the plaintext, rearranged`):N.section==="K4"&&(N.clue?G.push(`\u201C${N.ch}\u201D \u2192 \x3cb>${N.plain}\x3c/b>, part of ${N.clue} (Sanborn's published clue)`):G.push(`\u201C${N.ch}\u201D \xB7 K4 is still publicly unsolved`)),N.raised&&G.push("One of the raised letters Y, A, R on this line")}else G.push(N.rowLabel?`\x3cb>Tableau\x3c/b> \xB7 row ${N.rowLabel} \xB7 position ${N.col+1}`:`\x3cb>Tableau\x3c/b> \xB7 ${N.row===0?"top":"bottom"} alphabet \xB7 position ${N.col+1}`),G.push(`\u201C${N.ch}\u201D \xB7 cut mirrored, so it reads correctly from behind`),N.extraL&&G.push("\x3cb>The extra L\x3c/b>: this row has 32 characters instead of 31"),N.hill&&G.push("Last column, rows L\u2013O: H, I, L, L spells \x3cb>HILL\x3c/b>");return G.join("\x3cbr>")}function Xt(){if(!ct){Ut&&(Ut=null,A.visible=!1,Pt.hidden=!0);return}let N=t.getBoundingClientRect();lt.set((ct.x-N.left)/N.width*2-1,-((ct.y-N.top)/N.height)*2+1),at.setFromCamera(lt,s);let G=at.intersectObject(Yt,!1)[0],Y=null;if(G&&G.uv){let pt=at.intersectObjects(it,!1)[0];if(!pt||pt.distance>G.distance-.02){let gt=Ad(G.uv.x*St.length,G.uv.y*St.height);Y=gt&&g.glyphs.get(gt)||null}}if(Y!==Ut&&(Ut=Y,Y?(E.setDrawRange(Y.range[0],Y.range[1]),A.visible=!0,Pt.innerHTML=Gt(Y),Pt.hidden=!1):(A.visible=!1,Pt.hidden=!0)),Y){let gt=Pt.offsetWidth,Qt=Pt.offsetHeight,$t=ct.x+16,Le=ct.y+16;$t+gt>window.innerWidth-8&&($t=ct.x-gt-16),Le+Qt>window.innerHeight-8&&(Le=ct.y-Qt-16),Pt.style.transform=`translate(${Math.max(8,$t)}px, ${Math.max(8,Le)}px)`}}document.querySelectorAll("[data-view]").forEach(N=>N.addEventListener("click",()=>Tt(N.dataset.view)));let F=fe("time"),re=fe("date");function qt(){let[N,G]=Jx(yt.day);F.min=(N+.4).toFixed(2),F.max=(G-.4).toFixed(2),yt.hour=Math.min(Number(F.max),Math.max(Number(F.min),yt.hour)),F.value=String(yt.hour)}qt(),F.addEventListener("input",()=>{yt.hour=Number(F.value),k(!1)}),re.addEventListener("change",()=>{yt.day=Number(re.value),qt(),k(!0)});let R=fe("colorize");R.addEventListener("change",()=>{S.visible=R.checked,fe("legend").hidden=!R.checked});let v=fe("patina");function V(N){let G=N==="fresh"?h.fresh:h.today;u.map=G.map,u.roughnessMap=G.orm,u.metalnessMap=G.orm,u.needsUpdate=!0,f.color.set(N==="fresh"?10115642:4860444),f.roughness=N==="fresh"?.35:.62}v.addEventListener("change",()=>V(v.value));let q=fe("autorotate");q.checked=!1,q.addEventListener("change",()=>{r.autoRotate=q.checked,q.checked&&(ut=null)});async function tt(){let N=new Ke;N.name="Kryptos reconstruction";for(let Y of y)N.add(Y.clone());return N.add(C.exportable.clone()),new fi().parseAsync(N,{binary:!0,onlyVisible:!0,maxTextureSize:2048})}let siteExport=fe('exportSite');
@@ -5321,6 +5662,8 @@ siteExport.addEventListener('click',async()=>{
 });
 let mt=fe("export");mt.addEventListener("click",async()=>{let N=mt.textContent;mt.disabled=!0,mt.textContent="Preparing .glb\u2026";try{let G=await tt(),Y=URL.createObjectURL(new Blob([G],{type:"model/gltf-binary"})),pt=document.createElement("a");pt.href=Y,pt.download="kryptos.glb",document.body.appendChild(pt),pt.click(),pt.remove(),setTimeout(()=>URL.revokeObjectURL(Y),3e4),fe("exportNote").textContent=`Saved kryptos.glb (${(G.byteLength/1048576).toFixed(1)} MB). If nothing downloaded, open this page in its own browser tab and try again.`}catch(G){fe("exportNote").textContent="Export failed: "+(G&&G.message?G.message:G)}finally{mt.disabled=!1,mt.textContent=N}});let xt=fe("fontFile"),nt=fe("fontNote"),st=fe("fontReset"),Mt=fe("fontLabel"),Ft=N=>{let G=Ur();Mt.textContent=G?"Letters: "+G:"Letters: stand-in font",st.hidden=!G,N&&(nt.textContent=N)};async function wt(N){Ql(N);let G=await th(p,Y=>nt.textContent=`Recutting 1,736 letters\u2026 ${Math.round(Y*100)}%`,Fi);G.plates.forEach((Y,pt)=>{y[pt].geometry.dispose(),y[pt].geometry=Y.geometry}),S.geometry.dispose(),S.geometry=G.inlay,E.setAttribute("position",G.inlay.attributes.position),E.setIndex(G.inlay.index),E.boundingSphere=G.inlay.boundingSphere.clone(),Ut=null,A.visible=!1,Pt.hidden=!0,g=G,rt(),e.shadowMap.needsUpdate=!0}let vt=!1;async function zt(N){if(!(vt||!N)){vt=!0,xt.disabled=!0,st.disabled=!0,nt.textContent="Reading "+N.name+"\u2026";try{let G=await N.arrayBuffer(),Y=await nh(G,N.name),pt=Object.keys(Y.glyphs).length;if(pt<13)throw new Error(`That font only has ${pt} of the 27 characters the sculpture uses (A\u2013Z and ?).`);await wt(Y);let gt=Od(G,N.name),Qt=`Recut every letter in ${Y.name}.`;Y.missing.length&&(Qt+=` The font has no ${Y.missing.join(", ")}, so ${Y.missing.length===1?"that one keeps":"those keep"} the stand-in shape.`),Qt+=gt?" This browser will remember the font next time you open the page.":"",Ft(Qt)}catch(G){Ft((G&&G.message?G.message:String(G))+" The letters are unchanged.")}finally{vt=!1,xt.disabled=!1,st.disabled=!1,xt.value=""}}}xt.addEventListener("change",()=>zt(xt.files&&xt.files[0])),st.addEventListener("click",async()=>{if(!vt){vt=!0,st.disabled=!0;try{sh(),await wt(null),Ft("Back to the stand-in letters.")}finally{vt=!1,st.disabled=!1}}}),Ft(c||(Ur()?`Letters recut in ${Ur()}, remembered from your last visit. Pick another file to change it.`:null)),fe("panelToggle").addEventListener("click",()=>{let N=fe("panel"),G=N.dataset.open!=="false";N.dataset.open=G?"false":"true",fe("panelToggle").setAttribute("aria-expanded",String(!G)),fe("panelToggle").textContent=G?"Show controls":"Hide controls",a()}),Ls(.92,"Lighting the courtyard\u2026"),await Fi(),await e.compileAsync(n,s);let Vt=performance.now(),Zt=0,z=N=>{let G=Math.min(.1,(N-Vt)/1e3);Vt=N,Zt++,C.waterUniforms.uTime.value=N/1e3;let Y=1+.18*Math.sin(N/260)+.08*Math.sin(N/97);if(C.dome.scale.set(Y,.5*Y,Y),ut){ut.t=Math.min(1,ut.t+G/1.2);let pt=ut.t<.5?4*ut.t**3:1-(-2*ut.t+2)**3/2;s.position.lerpVectors(ut.fromP,ut.toP,pt),r.target.lerpVectors(ut.fromT,ut.toT,pt),ut.t>=1&&(ut=null)}r.update(),(ft||r.autoRotate||ut)&&(ft=!1,Xt()),e.render(n,s)};e.setAnimationLoop(z),Tt("front",!0),fe("loader").hidden=!0,document.body.classList.add("ready");let _t={msTextures:Math.round(d-i),msScreen:Math.round(M-d),msSurroundings:Math.round(D-M),msTotal:Math.round(performance.now()-i),lowSpec:Ps};function rt(){_t.vertices=g.plates.reduce((N,G)=>N+G.geometry.attributes.position.count,0),_t.triangles=g.plates.reduce((N,G)=>N+G.geometry.index.count/3,0),_t.glyphs=g.glyphList.length,_t.font=Ur(),fe("stats").textContent=`${_t.glyphs.toLocaleString()} cut characters \xB7 ${Math.round(_t.triangles/1e3).toLocaleString()}k triangles`}rt(),window.kryptos={stats:_t,setView:Tt,setTime(N){yt.hour=N,F.value=String(N),k(!0)},setDay(N){yt.day=N,re.value=String(N),qt(),k(!0)},setColorize(N){R.checked=N,R.dispatchEvent(new Event("change"))},setPatina(N){v.value=N,V(N)},hoverAt(N,G){return ct={x:N,y:G,type:"mouse"},Xt(),Ut?{key:Ut.side+":"+Ut.row+":"+Ut.col,ch:Ut.ch,html:Pt.innerHTML}:null},project(N,G){p.frame(N,Q);let Y=new L(Q.x,St.bottomY+G,Q.z).project(s),pt=t.getBoundingClientRect();return{x:pt.left+(Y.x+1)/2*pt.width,y:pt.top+(1-Y.y)/2*pt.height}},glyph(N){let G=g.glyphs.get(N);return G?{u:G.center[0],v:G.center[1],ch:G.ch}:null},exportGLB:tt,useFontFile:zt,setCamera(N,G,Y,pt,gt,Qt,$t){ut=null,s.position.set(N,G,Y),r.target.set(pt,gt,Qt),$t&&(s.fov=$t,s.updateProjectionMatrix()),r.update()},customGlyphs:()=>Md(),geometryCheck(){let N=0;for(let G of y)for(let Y of G.geometry.attributes.position.array)Number.isFinite(Y)||N++;return{nan:N,vertices:_t.vertices,triangles:_t.triangles,glyphs:_t.glyphs,font:_t.font}},frames:()=>Zt,pause(){e.setAnimationLoop(null)},resume(){e.setAnimationLoop(z)},renderOnce(){let N=performance.now();return z(N),performance.now()-N}},window.kryptos.site={toggle(v){qSite('siteToggle').checked=v;siteAddon.showAll(v);},
  showLabels(v){qSite('labelsToggle').checked=v;siteAddon.showLabels(v);},
+ showBuildings(v){qSite('buildingsToggle').checked=!!v;siteAddon.showBuildings(v);},
+ showTrees(v){qSite('treesToggle').checked=!!v;siteAddon.showTrees(v);},
  entrance:siteAddon.entrance, courtyard:siteAddon.courtyard, root:siteAddon.root};
  window.dispatchEvent(new Event("kryptos-ready"))}$x().catch(i=>{console.error(i),zd("Something went wrong while building the model: "+(i&&i.message?i.message:i))});
 </script>
