@@ -1,0 +1,1 @@
+Upload index.html and sculpture-lab.html to the root of kmseattle/Kryptos3D, alongside each other. Replace the existing index.html. The main page links to Sculpture Lab; the Lab links back to the main model. Both include a small by Kate Mercier credit. Existing sculpture and source credits are retained.

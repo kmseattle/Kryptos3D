@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Kryptos · interactive 3D model</title>
+<meta name="author" content="Kate Mercier">
 <!--
 This page bundles three.js r186 (https://threejs.org).
 The MIT License
@@ -149,6 +150,13 @@ THE SOFTWARE.
   @media (prefers-reduced-motion: reduce) {
     #panel, #bar { transition: none; }
   }
+
+  .title .creator-credit { display: block; margin-block-start: 3px; font-size: 11px; line-height: 1.25; letter-spacing: .02em; font-weight: 400; color: #d9d2c7; opacity: .72; }
+  .feature-nav { inset-block-start: 121px; }
+  .sculpture-lab-link { flex-basis: 100%; display: block; min-block-size: 42px; padding: 10px 14px; border: 1px solid var(--copper); border-radius: 12px; background: var(--panel-solid); color: var(--text); box-shadow: var(--shadow); text-decoration: none; text-align: center; font-size: 14px; font-weight: 600; }
+  .sculpture-lab-link:hover { background: var(--chip-hover); }
+  .sculpture-lab-link:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  @media (max-width: 760px) { .feature-nav { inset-block-start: 108px; } }
 </style>
 </head>
 <body>
@@ -156,6 +164,7 @@ THE SOFTWARE.
 
 <header class="title">
   <h1>KRYPTOS</h1>
+  <small class="creator-credit">by Kate Mercier</small>
   <p><span class="long">Jim Sanborn, 1990 · CIA Headquarters courtyard, Langley, Virginia</span><span class="short">Jim Sanborn, 1990 · CIA HQ, Langley</span></p>
 </header>
 
@@ -163,6 +172,7 @@ THE SOFTWARE.
   <button type="button" data-view="redstone" aria-pressed="false">Red stone</button>
   <button type="button" data-view="morse" aria-pressed="false">Morse code</button>
   <button type="button" data-view="compassdetail" aria-pressed="false">Compass rose</button>
+  <a class="sculpture-lab-link" href="sculpture-lab.html">Open Sculpture Lab</a>
   <p id="featureLocation" class="feature-location" role="status" hidden></p>
 </nav>
 
@@ -219,10 +229,10 @@ THE SOFTWARE.
   <section>
     <h2>Expanded installation</h2>
     <label class="switch"><input type="checkbox" id="siteToggle" checked> Show expanded surroundings</label>
-    <label class="switch"><input type="checkbox" id="courtyardToggle" checked> Reflecting pool, benches &amp; landscaping</label>
+    <label class="switch"><input type="checkbox" id="courtyardToggle" checked> Courtyard buildings, pool &amp; landscaping</label>
     <label class="switch"><input type="checkbox" id="entranceToggle" checked> West entrance, compass &amp; Morse stones</label>
     <label class="switch"><input type="checkbox" id="labelsToggle"> Show explanatory site labels</label>
-    <p class="small">New site features are modeled separately. The angular pond, opposing benches and low entrance outcrop follow the reference photos and NSA site sketch; distances and geographic bearings are estimates. Turn off expanded surroundings to recover the original view.</p>
+    <p class="small">The courtyard setting follows <a href="https://www.cia.gov/legacy/headquarters/kryptos-sculpture/" target="_blank" rel="noopener noreferrer">CIA</a> and <a href="https://www.voynich.net/Kryptos/" target="_blank" rel="noopener noreferrer">Gillogly</a> photographs: exposed aggregate concrete, restrained paving joints, glazed building wings, a low curved-roof pavilion and planted beds. Building dimensions, landscape positions and geographic bearings remain estimates. The sculpture and its sunlight controls are preserved.</p>
   </section>
 
   <section>
@@ -4911,6 +4921,181 @@ function placeCourtyardStones(core,redStone) {
   return {quartz,stoneTarget:new L(core.poolCenter.x+.65,.45,core.poolCenter.z+.8)};
 }
 
+// Courtyard materials and architecture follow the CIA and Gillogly photographs.
+// Building dimensions and planting positions are a visual reconstruction, not a survey.
+function refineKryptosEnvironment(core,site,lowSpec=false){
+  const random=Rs(20411990),up=new L(0,1,0),identity=new Fe();
+  const setting=new Ke();setting.name='Courtyard architecture and planting';site.courtyard.add(setting);
+  const box=(parent,name,x,y,z,w,h,d,material,angle=0)=>{const mesh=new ae(new dn(w,h,d),material);mesh.name=name;mesh.position.set(x,y,z);mesh.rotation.y=angle;mesh.receiveShadow=true;parent.add(mesh);return mesh;};
+  const texture=(kind,size=lowSpec?512:1024)=>{
+    const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d'),p=g.createImageData(size,size),r=Rs(kind==='grass'?328:810),cells=kind==='grass'?24:12,grid=Array.from({length:(cells+1)**2},()=>r());
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+      const gx=x/size*cells,gy=y/size*cells,ix=Math.floor(gx),iy=Math.floor(gy),fx=gx-ix,fy=gy-iy;
+      const a=grid[iy*(cells+1)+ix]*(1-fx)+grid[iy*(cells+1)+ix+1]*fx,b=grid[(iy+1)*(cells+1)+ix]*(1-fx)+grid[(iy+1)*(cells+1)+ix+1]*fx;
+      const cloud=a*(1-fy)+b*fy,fine=r(),grain=r(),i=(y*size+x)*4;
+      let base,noise;
+      if(kind==='grass'){base=[88,100,61];noise=(cloud-.5)*34+(fine-.5)*38;}
+      else if(kind==='mulch'){base=[73,64,49];noise=(cloud-.5)*24+(fine-.5)*48;}
+      else if(kind==='aggregate'){base=[174,170,159];noise=(cloud-.5)*14+(fine-.5)*27+(grain>.95?29:grain<.09?-34:0);}
+      else {base=[195,191,181];noise=(cloud-.5)*8+(fine-.5)*11;}
+      for(let k=0;k<3;k++)p.data[i+k]=Math.max(0,Math.min(255,base[k]+noise));p.data[i+3]=255;
+    }
+    g.putImageData(p,0,0);
+    if(kind==='grass')for(let j=0;j<size*6;j++){const x=r()*size,y=r()*size;g.strokeStyle=j%3?'rgba(158,151,93,.22)':'rgba(39,58,27,.22)';g.lineWidth=.6+r();g.beginPath();g.moveTo(x,y);g.lineTo(x+1+r()*2,y-2-r()*6);g.stroke();}
+    const t=mi(c,true,true);t.anisotropy=lowSpec?2:8;return t;
+  };
+  const aggregate=texture('aggregate',lowSpec?1024:1536),smooth=texture('concrete'),grassMap=texture('grass'),mulchMap=texture('mulch');
+  const groundMaterial=new Ce({map:aggregate,bumpMap:aggregate,bumpScale:.0032,roughness:.96,metalness:0,name:'Exposed aggregate concrete · fine mineral grain'});
+  aggregate.repeat.set(400/5,400/5);
+  const plaza=core.group.getObjectByName('Plaza');plaza.material=groundMaterial;
+  const oldBuilding=core.group.getObjectByName('New Headquarters Building');if(oldBuilding)oldBuilding.removeFromParent();
+  // Fine saw cuts, broad smooth bands and quiet material variation replace the old tile grid.
+  const surface=new Ke();surface.name='Concrete bands and fine paving joints';core.group.add(surface);
+  const smoothMaterial=new Ce({map:smooth,bumpMap:smooth,bumpScale:.001,roughness:.94,name:'Smooth poured concrete bands'});
+  smooth.repeat.set(4,4);
+  const jointMaterial=new Ce({color:0x797b73,roughness:1,transparent:true,opacity:.22,depthWrite:false,name:'Narrow concrete saw cuts'});
+  for(let x=-29.4;x<=32;x+=3.6)box(surface,'Quiet expansion joint',x,.001,5.2,.004,.001,67,jointMaterial);
+  for(let z=-21.8;z<=37;z+=3.6)box(surface,'Quiet expansion joint',1.4,.001,z,66,.001,.004,jointMaterial);
+  for(const [start,end] of [[-13,5.025],[6.575,22.45],[24.75,29]])box(surface,'Wide concrete walkway band',-9.4,.002,(start+end)/2,1.65,.004,end-start,smoothMaterial);
+  box(surface,'Cross-courtyard concrete band',1.0,.002,5.8,66,.004,1.55,smoothMaterial);
+  box(surface,'Outer courtyard concrete walk',1.0,.002,23.6,66,.004,2.3,smoothMaterial);
+  // Remove the earlier proxy architecture and bead-shaped landscaping.
+  for(const child of [...site.architecture.children])child.removeFromParent();
+  const proxyColours=new Set([0x3d5140,0x526344,0x66724d,0x79805a]),proxies=[];
+  site.courtyard.traverse(o=>{if(o.isMesh&&o.material?.color&&proxyColours.has(o.material.color.getHex()))proxies.push(o);});for(const o of proxies)o.removeFromParent();
+  const stoneMap=texture('concrete');
+  const stone=new Ce({map:stoneMap,bumpMap:stoneMap,bumpScale:.0015,color:0xe1dbd4,roughness:.90,name:'Pale rose-grey architectural concrete'});
+  const frame=new Ce({color:0xd5d8d0,roughness:.55,metalness:.35,name:'Light anodised window frames'});
+  const reveal=new Ce({color:0x3d4f4a,roughness:.81,name:'Deep window reveals'});
+  const roofMaterial=new Ce({color:0xd8d9cf,roughness:.73,metalness:.17,name:'Pavilion metal roof'});
+  const roofEdge=new Ce({color:0xf0efe5,roughness:.72,name:'Light curved pavilion fascia'});
+  const reflectionCanvas=document.createElement('canvas');reflectionCanvas.width=1024;reflectionCanvas.height=512;
+  const rc=reflectionCanvas.getContext('2d'),gradient=rc.createLinearGradient(0,0,0,512);gradient.addColorStop(0,'#92acad');gradient.addColorStop(.43,'#526e6c');gradient.addColorStop(1,'#243f37');rc.fillStyle=gradient;rc.fillRect(0,0,1024,512);
+  for(let j=0;j<70;j++){const x=random()*1024,w=15+random()*65,h=80+random()*250;rc.fillStyle=`rgba(26,48,37,${.025+random()*.07})`;rc.beginPath();rc.ellipse(x,500-h*.36,w,h,0,0,Math.PI*2);rc.fill();}
+  const reflection=mi(reflectionCanvas,true,true);reflection.repeat.set(5,1);
+  const glass=new Ce({map:reflection,color:0xb7cac2,roughness:.17,metalness:.37,envMapIntensity:1.15,name:'Blue-green reflective courtyard glazing'});
+  const instanceBoxes=(parent,name,records,material)=>{
+    const mesh=new js(new dn(1,1,1),material,records.length),matrix=new le();mesh.name=name;
+    records.forEach((v,i)=>{matrix.compose(new L(v[0],v[1],v[2]),identity,new L(v[3],v[4],v[5]));mesh.setMatrixAt(i,matrix);});mesh.instanceMatrix.needsUpdate=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  };
+  const facade=(parent,name,width,height,levels)=>{
+    const group=new Ke();group.name=name;parent.add(group);const bars=[],step=height/levels;
+    box(group,'Recessed facade backing',0,height/2,-.35,width,height,.55,reveal);
+    for(let row=0;row<levels;row++){
+      const base=row*step,glassHeight=step-.70;
+      box(group,'Recessed continuous glass',0,base+.28+glassHeight/2,.025,width-.2,glassHeight,.065,glass);
+      box(group,'Horizontal concrete spandrel',0,base+step-.25,.17,width,.50,.48,stone);
+      box(group,'Projecting sill',0,base+.20,.14,width,.11,.28,frame);
+      box(group,'Thin floor shadow reveal',0,base+step-.54,.19,width,.045,.29,reveal);
+      for(let x=-width/2+.45;x<width/2;x+=1.12)bars.push([x,base+.28+glassHeight/2,.15,.045,glassHeight,.16]);
+      bars.push([0,base+.28+glassHeight*.53,.15,width,.034,.16]);
+    }
+    instanceBoxes(group,'Slender glazing mullions',bars,frame);
+    box(group,'Roof parapet',0,height+.16,-.10,width,.32,.64,stone);return group;
+  };
+  const office=new Ke();office.name='New Headquarters courtyard wing';setting.add(office);
+  box(office,'Office wing volume',0,9.35,-31.9,72,18.7,45.2,stone);
+  const mainFacade=facade(office,'Courtyard glass and stone facade',72,18.7,5);mainFacade.position.set(0,0,-9.22);
+  box(office,'Return wing volume',45,9.35,9.0,18.3,18.7,37,stone);
+  const endFacade=facade(office,'Courtyard return facade',37,18.7,5);endFacade.position.set(35.8,0,9.0);endFacade.rotation.y=-Math.PI/2;
+  // The west entrance remains at the compass / Morse installation, on the far side.
+  const westFacade=facade(site.architecture,'West entrance glazed facade',72,18.7,5);westFacade.position.set(0,0,-54.6);westFacade.rotation.y=Math.PI;
+  box(site.architecture,'Recessed west entrance doors',0,1.55,-54.96,4.9,3.1,.12,glass);
+  for(const x of [-2.45,0,2.45])box(site.architecture,'Entrance door stile',x,1.55,-55.02,.065,3.1,.09,frame);
+  const canopy=box(site.architecture,'West entrance canopy',0,3.5,-56.2,7.8,.16,3.5,roofEdge);canopy.castShadow=true;
+  // Low glazed pavilion across the lawn, with its characteristic sweeping roof.
+  const pavilion=new Ke();pavilion.name='Low glazed courtyard pavilion';pavilion.position.set(0,0,29.5);setting.add(pavilion);
+  const roofY=x=>3.3+2.0*Math.exp(-Math.pow((x+5)/21,2));
+  const roofPositions=[],roofIndices=[],roofUV=[],segments=80;
+  for(let i=0;i<=segments;i++){
+    const x=-35+70*i/segments,y=roofY(x);
+    roofPositions.push(x,y,-.75,x,y+.45,12);roofUV.push(i/segments,0,i/segments,1);
+    if(i<segments){const j=i*2;roofIndices.push(j,j+1,j+2,j+1,j+3,j+2);}
+  }
+  const roofGeometry=new Se();roofGeometry.setAttribute('position',new ne(new Float32Array(roofPositions),3));roofGeometry.setAttribute('uv',new ne(new Float32Array(roofUV),2));roofGeometry.setIndex(roofIndices);roofGeometry.computeVertexNormals();
+  const roof=new ae(roofGeometry,roofMaterial);roof.material.side=De;roof.name='Sweeping low pavilion roof';roof.receiveShadow=true;pavilion.add(roof);
+  const fasciaPositions=[],fasciaIndices=[];
+  for(let i=0;i<=segments;i++){const x=-35+70*i/segments,y=roofY(x);fasciaPositions.push(x,y-.20,-.83,x,y+.10,-.83);if(i<segments){const j=i*2;fasciaIndices.push(j,j+1,j+2,j+1,j+3,j+2);}}
+  const fasciaGeometry=new Se();fasciaGeometry.setAttribute('position',new ne(new Float32Array(fasciaPositions),3));fasciaGeometry.setIndex(fasciaIndices);fasciaGeometry.computeVertexNormals();const fascia=new ae(fasciaGeometry,roofEdge);fascia.name='Curved pale pavilion eave';pavilion.add(fascia);
+  const pavilionBars=[];
+  for(let x=-34.3;x<35;x+=1.24){const h=roofY(x)-.35;box(pavilion,'Pavilion glazing bay',x,h/2+.13,0,1.19,h,.065,glass);pavilionBars.push([x-.62,h/2+.13,-.06,.045,h+.1,.14]);}
+  instanceBoxes(pavilion,'Pavilion window mullions',pavilionBars,frame);
+  box(pavilion,'Pavilion base',0,.11,-.01,70,.22,.28,stone);
+  box(pavilion,'Pavilion rear wall',0,1.55,12.1,70,3.1,.25,stone);
+  for(const x of [-34.9,34.9]){const height=roofY(x)-.3;box(pavilion,'Pavilion end glazing',x,height/2,5.6,.08,height,12.7,glass);}
+  for(let i=0;i<=40;i++){const x=-35+70*i/40,y=roofY(x)+.014;box(pavilion,'Standing roof seam',x,y,5.63,.025,.026,12.72,roofEdge);}
+  // Keep the existing planter and stone seats; give their surrounds real depth.
+  const planter=site.courtyard.getObjectByName('Low pale planter wall behind sculpture');if(planter){planter.material=stone;box(setting,'Planter coping',0,.675,-3.7,14.15,.07,.68,stone);}
+  const mulchMaterial=new Ce({map:mulchMap,bumpMap:mulchMap,bumpScale:.009,roughness:1,name:'Dark organic planting bed'});mulchMap.repeat.set(3,1);
+  box(setting,'Raised planting bed',0,.32,-6.43,17,.64,4.75,mulchMaterial);
+  for(const sign of [-1,1]){box(setting,'Planter side retaining wall',sign*8.6,.33,-6.40,.28,.66,4.9,stone);box(setting,'Planter front wall extension',sign*7.85,.33,-3.7,1.7,.66,.58,stone);}
+  const turfMaterial=new Ce({map:grassMap,bumpMap:grassMap,bumpScale:.003,roughness:.98,name:'Fine mixed courtyard turf'});
+  site.courtyard.traverse(o=>{if(o.name==='Semicircular lawn')o.material=turfMaterial;});
+  const entranceLawn=site.entrance.getObjectByName('Entrance lawn');if(entranceLawn)entranceLawn.material=turfMaterial;
+  const entranceWalk=site.entrance.getObjectByName('Entrance walkway crossing the outcrop');if(entranceWalk)entranceWalk.material=smoothMaterial;
+  // Individual leaf planes and branching trunks replace low-poly shrub balls.
+  const leafCanvas=document.createElement('canvas');leafCanvas.width=512;leafCanvas.height=256;const lc=leafCanvas.getContext('2d');lc.clearRect(0,0,512,256);
+  // A twig carries small pointed, serrated leaves, rather than one oversized leaf.
+  lc.strokeStyle='rgba(108,105,84,.90)';lc.lineWidth=2.1;lc.beginPath();lc.moveTo(22,148);lc.bezierCurveTo(175,118,340,143,486,110);lc.stroke();
+  const drawLeaf=(x,y,length,angle)=>{
+    lc.save();lc.translate(x,y);lc.rotate(angle);const gradient=lc.createLinearGradient(0,-length*.45,0,length*.45);gradient.addColorStop(0,'#9da595');gradient.addColorStop(.46,'#eeeede');gradient.addColorStop(1,'#a3ab95');lc.fillStyle=gradient;
+    lc.beginPath();lc.moveTo(0,0);for(let j=1;j<=12;j++){const t=j/12,edge=Math.sin(Math.PI*t)*length*.30*(j%2?1:.92);lc.lineTo(t*length,-edge);}for(let j=11;j>0;j--){const t=j/12,edge=Math.sin(Math.PI*t)*length*.30*(j%2?1:.92);lc.lineTo(t*length,edge);}lc.closePath();lc.fill();
+    lc.strokeStyle='rgba(76,89,58,.30)';lc.lineWidth=.8;lc.beginPath();lc.moveTo(2,0);lc.lineTo(length-3,0);for(let j=2;j<7;j++){const q=j/8;lc.moveTo(length*q,0);lc.lineTo(length*(q+.12),-Math.sin(q*Math.PI)*length*.23);lc.moveTo(length*q,0);lc.lineTo(length*(q+.12),Math.sin(q*Math.PI)*length*.23);}lc.stroke();lc.restore();
+  };
+  for(let j=0;j<6;j++){const x=70+j*65,y=139-j*2;lc.strokeStyle='rgba(108,105,84,.75)';lc.lineWidth=1.1;lc.beginPath();lc.moveTo(x,y);lc.lineTo(x+15,y-21);lc.moveTo(x+8,y);lc.lineTo(x+22,y+22);lc.stroke();drawLeaf(x+15,y-20,66+(j%3)*8,-1.16+j*.035);drawLeaf(x+22,y+21,62+(j%2)*10,.87-j*.03);}drawLeaf(440,116,66,-.20);
+  const leafMaterial=new Ce({map:mi(leafCanvas,true,false),color:0xffffff,roughness:.91,metalness:0,alphaTest:.46,side:De,name:'Small irregular deciduous leaves'});
+  const barkCanvas=document.createElement('canvas');barkCanvas.width=128;barkCanvas.height=512;const bc=barkCanvas.getContext('2d');bc.fillStyle='#b6b1a0';bc.fillRect(0,0,128,512);
+  for(let j=0;j<420;j++){const y=random()*512;bc.fillStyle=j%5?'rgba(62,57,46,.28)':'rgba(49,45,36,.60)';bc.fillRect(random()*128,y,2+random()*14,.4+random()*2);}
+  const barkMaterial=new Ce({map:mi(barkCanvas,true,true),roughness:.96,name:'Light weathered deciduous bark'});
+  const trunks=[],leaves=[];
+  const branch=(a,b,r)=>trunks.push({p:a.clone().add(b).multiplyScalar(.5),q:new Fe().setFromUnitVectors(up,b.clone().sub(a).normalize()),s:new L(r,a.distanceTo(b),r)});
+  const leaf=(p,w,golden=0)=>{const normal=new L(random()-.5,random()-.2,random()-.5).normalize();leaves.push({p,q:new Fe().setFromUnitVectors(new L(0,0,1),normal).multiply(new Fe().setFromAxisAngle(new L(0,0,1),random()*Math.PI*2)),s:new L(w,w,w),golden,shade:.74+random()*.35});};
+  const tree=(x,z,height,width)=>{
+    const base=.64,top=new L(x+.08,base+height,z-.16);let previous=new L(x,base,z);
+    for(let i=1;i<=5;i++){const t=i/5,next=new L(x+Math.sin(t*1.8)*.17,base+height*t,z-.16*t);branch(previous,next,.095*(1-t*.78));previous=next;}
+    const crowns=[];
+    for(let j=0;j<11;j++){const a=j*2.399+random()*.7,start=new L(x,base+height*(.43+random()*.32),z),end=new L(x+Math.cos(a)*width*(.5+random()*.6),base+height*(.69+random()*.31),z+Math.sin(a)*width*(.5+random()*.6));const mid=start.clone().lerp(end,.54);mid.y+=.18;branch(start,mid,.031+random()*.02);branch(mid,end,.014);crowns.push(end);}
+    const count=lowSpec?950:1900;
+    for(let i=0;i<count;i++){const center=crowns[i%crowns.length],r=Math.cbrt(random()),a=random()*Math.PI*2,v=random()*2-1,rad=Math.sqrt(1-v*v),p=center.clone().add(new L(Math.cos(a)*rad*r*width*.56,v*r*height*.17,Math.sin(a)*rad*r*width*.56));leaf(p,.30+random()*.25,i%7===0?.6:random()*.32);}
+  };
+  for(const v of [[-7.5,-6.4,5.6,1.55],[-4.4,-6.9,6.7,1.8],[-.6,-7.3,6.3,1.6],[3.8,-6.8,6.5,1.7],[7.5,-6.3,5.7,1.5]])tree(...v);
+  const shrub=(x,y,z,w,h)=>{
+    for(let j=0;j<10;j++){const a=random()*Math.PI*2;branch(new L(x,y,z),new L(x+Math.cos(a)*w*.6,y+h*.7,z+Math.sin(a)*w*.6),.008);}
+    for(let i=0;i<(lowSpec?260:480);i++){const a=random()*Math.PI*2,r=Math.sqrt(random());leaf(new L(x+Math.cos(a)*w*r,y+h*(.25+random()*.7),z+Math.sin(a)*w*r),.20+random()*.14,.02);}
+  };
+  for(const v of [[-7,.65,-4.6,.75,.6],[-3,.65,-4.7,.8,.75],[1,.65,-5.3,.8,.6],[5.5,.65,-4.6,.85,.75],[8,.65,-5.3,.65,.6]])shrub(...v);
+  const leafMesh=new js(new Rn(1,.50),leafMaterial,leaves.length),leafMatrix=new le(),colour=leafMaterial.color.clone();leafMesh.name='Layered small leaves · trees and shrubs';
+  leaves.forEach((o,i)=>{leafMatrix.compose(o.p,o.q,o.s);leafMesh.setMatrixAt(i,leafMatrix);colour.setRGB((.18+o.golden*.28)*o.shade,(.235+o.golden*.1)*o.shade,(.07+o.golden*.015)*o.shade);leafMesh.setColorAt(i,colour);});leafMesh.instanceMatrix.needsUpdate=true;leafMesh.instanceColor.needsUpdate=true;leafMesh.receiveShadow=true;setting.add(leafMesh);
+  const branchMesh=new js(new ir(.64,1,1,7),barkMaterial,trunks.length),branchMatrix=new le();branchMesh.name='Branching deciduous tree stems';trunks.forEach((o,i)=>{branchMatrix.compose(o.p,o.q,o.s);branchMesh.setMatrixAt(i,branchMatrix);});branchMesh.instanceMatrix.needsUpdate=true;branchMesh.receiveShadow=true;setting.add(branchMesh);
+  // Soft tussocks are concentrated at the edges; leave the pond lawn open.
+  const blades=[],bladeColours=[];
+  const grassClump=(x,y,z,scale)=>{
+    for(let j=0;j<(lowSpec?65:110);j++){const a=random()*Math.PI*2,r=random()*.17*scale,bx=x+Math.cos(a)*r,bz=z+Math.sin(a)*r,h=(.23+random()*.43)*scale,w=(.004+random()*.009)*scale,lean=.12*scale,dx=Math.cos(a),dz=Math.sin(a);const points=[bx-dz*w,y,bz+dx*w,bx+dz*w,y,bz-dx*w,bx+dx*lean,y+h*.58,bz+dz*lean,bx+dx*lean*1.9,y+h,bz+dz*lean*1.9];blades.push(...points.slice(0,9),...points.slice(3,9),...points.slice(9));for(let v=0;v<6;v++){const c=.68+random()*.3;bladeColours.push(.18*c,.23*c,.075*c);}}
+  };
+  for(let i=0;i<22;i++)grassClump(-7.5+i*.72,.65,-4.4+(random()-.5)*.65,.7+random()*.5);
+  const pond=site.courtyard.getObjectByName('Angular lily pond and opposing benches');
+  const pondPlants=new Ke();pondPlants.name='Natural grasses at curved lawn edge';pond.add(pondPlants);
+  // Build edge clumps in world space using the pond's own transform.
+  pond.updateMatrixWorld(true);
+  for(let j=0;j<28;j++){const a=.07+Math.PI*j/27,p=new L(4.15-8.65*Math.sin(a),.03,8.65*Math.cos(a)).applyMatrix4(pond.matrixWorld);grassClump(p.x,p.y,p.z,.62+random()*.4);}
+  const bladeGeometry=new Se();bladeGeometry.setAttribute('position',new ne(new Float32Array(blades),3));bladeGeometry.setAttribute('color',new ne(new Float32Array(bladeColours),3));bladeGeometry.computeVertexNormals();const bladeMesh=new ae(bladeGeometry,new Ce({vertexColors:true,roughness:1,side:De,name:'Fine ornamental grass blades'}));bladeMesh.name='Irregular grass tussocks';bladeMesh.receiveShadow=true;setting.add(bladeMesh);
+  // Round courtyard picnic seating visible in the wider reference photographs.
+  const furniture=new Ce({color:0x343b38,roughness:.77,metalness:.22,name:'Dark outdoor table and bench metal'});
+  const picnic=(x,z)=>{
+    const group=new Ke();group.name='Round courtyard picnic table';group.position.set(x,0,z);setting.add(group);
+    const top=new ae(new ir(.72,.72,.07,48),furniture);top.position.y=.75;top.name='Round table top';top.receiveShadow=true;group.add(top);
+    box(group,'Table pedestal',0,.36,0,.14,.72,.14,furniture);
+    for(let j=0;j<3;j++){
+      const a=j*Math.PI*2/3,start=a-.62,end=a+.62,path=[];for(let k=0;k<=12;k++){const q=start+(end-start)*k/12;path.push([Math.cos(q)*1.13,Math.sin(q)*1.13]);}for(let k=12;k>=0;k--){const q=start+(end-start)*k/12;path.push([Math.cos(q)*.82,Math.sin(q)*.82]);}
+      const bench=siteStonePrism('Curved picnic bench',path,.47,.41,furniture);group.add(bench);
+      for(const q of [a-.42,a+.42])box(group,'Picnic bench leg',Math.cos(q)*.99,.22,Math.sin(q)*.99,.07,.44,.07,furniture);
+      box(group,'Radial table support',Math.cos(a)*.47,.13,Math.sin(a)*.47,.94,.07,.07,furniture,-a);
+    }
+  };picnic(-5.8,2.7);picnic(-8.2,8.0);
+  site.environment={setting,surface,plaza,office,pavilion,leafMesh,branchMesh,groundMaterial};
+  return site.environment;
+}
+
 function buildKryptosSiteAddon(lowSpec=false,core={}) {
   const root=new Ke();root.name='Kryptos surroundings · documented relative arrangement';
   const courtyard=new Ke(),entrance=new Ke(),architecture=new Ke(),labels=new Ke();
@@ -5080,7 +5265,7 @@ async function $x(){let i=performance.now(),t=fe("scene"),e;try{e=new za({canvas
    if(oldForegroundRock){oldForegroundRock.removeFromParent();oldForegroundRock.geometry.dispose();oldForegroundRock.material.dispose();}
    C.exportable.add(foregroundStone);
    placeCourtyardStones(C,foregroundStone);
-   const siteAddon=buildKryptosSiteAddon(Ps,C);n.add(siteAddon.root);
+   const siteAddon=buildKryptosSiteAddon(Ps,C);refineKryptosEnvironment(C,siteAddon,Ps);n.add(siteAddon.root);
    const qSite=id=>fe(id);
    qSite('siteToggle').addEventListener('change',()=>siteAddon.showAll(qSite('siteToggle').checked));
    qSite('courtyardToggle').addEventListener('change',()=>siteAddon.showCourtyard(qSite('courtyardToggle').checked));
