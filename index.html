@@ -255,7 +255,8 @@ THE SOFTWARE.
     <p class="small" id="siteExportNote">Includes the expanded surroundings, compass, entrance slabs and courtyard garden.</p>
   </section>
 
-  <details><summary>Compass carving and orientation</summary><p>The ring, four cardinal letters, radial rules and long divided needle follow the <a href="https://www.cia.gov/static/9ff42ea035bb1e7aba9591db8beeaefb/63012/kryptos_sculpture_2_lg.jpg" target="_blank" rel="noopener noreferrer">CIA compass photograph</a>. The lodestone sits along the needle’s extension.</p><p><a href="https://www.elonka.com/kryptos/KryptosAerial.html" target="_blank" rel="noopener noreferrer">Elonka’s reference</a> reports the engraved N at approximately 220°; its exact bearing is not established. The needle is drawn at its photographed angle to that N, rather than being made to point at the letter N. Exact entrance coordinates and bearings remain estimates.</p></details>
+  <details><summary>Compass carving and orientation</summary><p>The ring, cardinal letters, divided needle and lodestone follow the <a href="https://www.cia.gov/static/9ff42ea035bb1e7aba9591db8beeaefb/63012/kryptos_sculpture_2_lg.jpg" target="_blank" rel="noopener noreferrer">CIA photograph</a>. The compass close-up now looks across the slab from the photographed side: S and W are beyond the center, E and N nearer the viewer, and the needle points toward the lodestone. Its engraved N is deliberately offset from geographic north; <a href="https://www.elonka.com/kryptos/KryptosAerial.html" target="_blank" rel="noopener noreferrer">Elonka’s survey notes</a> give an approximate bearing of 220°, not a measured value.</p></details>
+  <details><summary>Entrance Morse code</summary><p>The copper contains paired rows of pierced dots and dashes, with extra single-dot marks and an ending hidden by stone. The model keeps those marks instead of spelling out a guessed completion. The visible sequences follow <a href="https://www.voynich.net/Kryptos/" target="_blank" rel="noopener noreferrer">Jim Gillogly’s close-up photographs</a> and <a href="https://www.scirealm.org/Kryptos.html" target="_blank" rel="noopener noreferrer">John Wilson’s line-by-line transcription</a>. The exact order and placement of the separate entrance plates are still approximate.</p></details>
   <details open>
     <summary>About the sculpture</summary>
     <p>Dedicated on 3 November 1990 in the north-west corner of the New Headquarters Building courtyard. A petrified tree holds an S-shaped copper screen “like a waving flag”, as Jim Gillogly put it.</p>
@@ -4819,17 +4820,57 @@ async function buildForegroundRedStone(lowSpec=false) {
     const texture=mi(canvas,true,false);texture.anisotropy=4;
     return {texture,pixels:context.getImageData(0,0,canvas.width,canvas.height).data,width:canvas.width,height:canvas.height};
   };
-  const [frontPhoto,topPhoto,endPhoto]=await Promise.all([
-    loadSurface(RED_STONE_PHOTO_TEXTURES.front),loadSurface(RED_STONE_PHOTO_TEXTURES.top),loadSurface(RED_STONE_PHOTO_TEXTURES.ends)
+  const [frontPhoto,endPhoto]=await Promise.all([
+    loadSurface(RED_STONE_PHOTO_TEXTURES.front),loadSurface(RED_STONE_PHOTO_TEXTURES.ends)
   ]);
-  const length=3.45,height=.59;
+  const faceCanvas=frontPhoto.texture.image,faceContext=faceCanvas.getContext('2d');
+  const faceImage=faceContext.getImageData(0,0,faceCanvas.width,faceCanvas.height);
+  for(let i=0;i<faceImage.data.length;i+=4){
+    faceImage.data[i]=Math.min(255,faceImage.data[i]*1.07+24);
+    faceImage.data[i+1]=Math.min(255,faceImage.data[i+1]*.97+7);
+    faceImage.data[i+2]=Math.min(255,faceImage.data[i+2]*.78+3);
+  }
+  faceContext.putImageData(faceImage,0,0);
+  frontPhoto.pixels=faceImage.data;frontPhoto.texture.needsUpdate=true;
+  // The supplied photos show a broad, weathered upper face. A tiny crop of it
+  // was stretched across the whole stone, creating blurry white bands.
+  const topCanvas=document.createElement('canvas');topCanvas.width=1024;topCanvas.height=512;
+  const ctx=topCanvas.getContext('2d'),random=Rs(8426);
+  ctx.fillStyle='#a66051';ctx.fillRect(0,0,1024,512);
+  for(let i=0;i<4500;i++){
+    const x=random()*1024,y=random()*512,r=2+random()*34;
+    ctx.fillStyle=random()>.52?'rgba(228,177,158,.028)':'rgba(72,31,29,.025)';
+    ctx.beginPath();ctx.ellipse(x,y,r,r*(.16+random()*.24),random()*.25,0,Math.PI*2);ctx.fill();
+  }
+  // Cream-colored weathering interrupts the red surface in irregular patches.
+  for(let i=0;i<7000;i++){
+    const x=random()*1024,y=random()*512;
+    const offset=(x-760-68*Math.sin(y/83))/215,vertical=(y-254)/196;
+    if(random()>.80*Math.exp(-1.8*offset*offset-1.3*vertical*vertical))continue;
+    const r=3+random()*28;
+    ctx.fillStyle=random()>.45?'rgba(213,209,189,.09)':'rgba(174,194,178,.065)';
+    ctx.beginPath();ctx.ellipse(x,y,r,r*(.25+random()*.45),random()*2,0,Math.PI*2);ctx.fill();
+  }
+  for(let i=0;i<22000;i++){
+    const v=65+random()*115;
+    ctx.fillStyle=`rgba(${(v+32)|0},${(v-5)|0},${(v-17)|0},${.02+random()*.065})`;
+    ctx.fillRect(random()*1024,random()*512,1+random()*2,1+random()*2);
+  }
+  ctx.lineCap='round';ctx.lineJoin='round';
+  const scars=[[[34,88],[127,99],[211,93],[316,111]],[[443,267],[532,262],[621,289],[707,278]],[[714,435],[781,421],[865,433],[991,404]]];
+  scars.forEach((path,i)=>{
+    ctx.strokeStyle='rgba(75,39,35,.21)';ctx.lineWidth=3+i*.7;ctx.beginPath();
+    path.forEach(([x,y],j)=>j?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();
+  });
+  const topPhoto={texture:mi(topCanvas,true,false)};
+  const length=3.45,height=.49;
   const interpolate=(t,knots)=>{
     for(let j=1;j<knots.length;j++)if(t<=knots[j][0]){
       const a=knots[j-1],b=knots[j],f=(t-a[0])/(b[0]-a[0]);return a[1]+f*(b[1]-a[1]);
     }
     return knots[knots.length-1][1];
   };
-  const topProfile=[[0,.48],[.04,.525],[.13,.55],[.25,.56],[.43,.575],[.64,.59],[.79,.58],[.845,.57],[.865,.50],[.89,.43],[.92,.435],[.945,.36],[.97,.37],[1,.34]];
+  const topProfile=[[0,.48],[.04,.525],[.13,.55],[.25,.56],[.43,.575],[.64,.59],[.79,.58],[.90,.57],[.95,.55],[.98,.46],[1,.41]].map(([u,h])=>[u,h*.83]);
   const baseProfile=[[0,.10],[.035,.045],[.10,.025],[.22,.012],[.45,.008],[.67,.022],[.83,.043],[.94,.07],[1,.10]];
   const leftBreak=[[0,.10],[.10,0],[.22,.035],[.34,.055],[.43,.11],[.51,.14],[.63,.045],[.79,.02],[.91,.045],[1,.04]];
   const rightBreak=[[0,.075],[.15,0],[.40,.01],[.65,0],[.85,.03],[1,.025]];
@@ -4848,9 +4889,9 @@ async function buildForegroundRedStone(lowSpec=false) {
     let y=bottom+(top-bottom)*v-height/2;
     // Broad, nearly planar plateau, with only shallow bedding undulations.
     y+=Math.pow(v,10)*.016*Math.sin(Math.PI*w)*Math.sin(u*5.1+.7);
-    const upperRecess=.245*interpolate(u,[[0,0],[.13,0],[.175,.8],[.21,1],[.255,1],[.29,.65],[.325,0],[1,0]])*interpolate(v,[[0,0],[.42,0],[.53,.6],[.60,1],[.83,1],[.92,.15],[1,0]]);
-    const openLeftSeam=.13*interpolate(u,[[0,.6],[.04,1],[.13,1],[.20,0],[1,0]])*interpolate(v,[[0,0],[.36,0],[.42,1],[.50,1],[.56,0],[1,0]]);
-    const lowerLip=.045*interpolate(u,[[0,1],[.14,1],[.27,0],[1,0]])*interpolate(v,[[0,0],[.08,.9],[.20,1],[.28,0],[1,0]]);
+    const upperRecess=.12*interpolate(u,[[0,0],[.13,0],[.175,.8],[.21,1],[.255,1],[.29,.65],[.325,0],[1,0]])*interpolate(v,[[0,0],[.42,0],[.53,.6],[.60,1],[.83,1],[.92,.15],[1,0]]);
+    const openLeftSeam=.075*interpolate(u,[[0,.6],[.04,1],[.13,1],[.20,0],[1,0]])*interpolate(v,[[0,0],[.36,0],[.42,1],[.50,1],[.56,0],[1,0]]);
+    const lowerLip=.032*interpolate(u,[[0,1],[.14,1],[.27,0],[1,0]])*interpolate(v,[[0,0],[.08,.9],[.20,1],[.28,0],[1,0]]);
     const fineRelief=.020*(sampleRelief(u,v)-.25)*Math.sin(Math.PI*v);
     const near=interpolate(u,frontPlan)-upperRecess-openLeftSeam+lowerLip+fineRelief;
     const far=interpolate(u,backPlan)+.011*Math.sin(v*35+u*8)*Math.sin(Math.PI*v);
@@ -4885,7 +4926,7 @@ async function buildForegroundRedStone(lowSpec=false) {
   surface('Red stone · fractured left end',rows,depthRows,(v,w)=>point(0,v,w),(v,w)=>[w,v],endMaterial);
   surface('Red stone · stepped right end',rows,depthRows,(v,w)=>point(1,v,w),(v,w)=>[w,v],endMaterial,true);
   root.position.set(.95,height/2+.025,2.12);root.rotation.y=-.035;
-  root.userData.reconstruction='Outline and fractures traced from front and oblique photographs; dimensions and placement remain estimates.';
+  root.userData.reconstruction='Layered outline and squat height traced from front and oblique photographs; dimensions remain estimates.';
   root.userData.photoCredit='Jim Gillogly, Kryptos Pix, 1999';
   root.userData.referencePhotos=['https://www.voynich.net/Kryptos/full/overview.jpg','https://www.voynich.net/Kryptos/full/overview-with-pool.jpg'];
   return root;
@@ -4911,29 +4952,107 @@ function siteStonePrism(name,polygon,top,base,material) {
 function placeCourtyardStones(core,redStone) {
   const old=core.exportable.getObjectByName('White quartz boulder');
   if(old){old.removeFromParent();old.geometry.dispose();old.material.dispose();}
-  const textureCanvas=document.createElement('canvas');textureCanvas.width=512;textureCanvas.height=512;
-  const ctx=textureCanvas.getContext('2d'),random=Rs(2811);ctx.fillStyle='#e4e3dc';ctx.fillRect(0,0,512,512);
-  for(let i=0;i<9500;i++){const shade=170+Math.floor(random()*75);ctx.fillStyle=`rgba(${shade},${shade},${shade},.12)`;ctx.fillRect(random()*512,random()*512,1+random()*3,1+random()*3);}
-  for(let i=0;i<8;i++){const offset=i*79-220;ctx.strokeStyle='rgba(90,98,101,.27)';ctx.lineWidth=.7+random()*1.2;ctx.beginPath();ctx.moveTo(offset,0);ctx.lineTo(offset+170,250);ctx.lineTo(offset+360,512);ctx.stroke();}
-  const quartzMaterial=new Ce({map:mi(textureCanvas,true,false),roughness:.90,metalness:0,flatShading:true,name:'Angular white quartz slab'});
+  // The footprint is the user's traced plan. It is intentionally unchanged.
   const outline=[[-1.2666,0.19068],[-1.06481,0.23547],[-0.82938,0.21307],[-0.71727,0.39224],[-0.6388,0.52662],[-0.47064,0.73939],[-0.30247,0.91856],[-0.26884,1.24331],[-0.47064,1.2993],[-0.73969,1.25451],[-0.97512,1.18732],[-1.13207,1.13133],[-1.21055,0.99695],[-1.23297,0.82897],[-1.35629,0.6946],[-1.34507,0.50423],[-1.27781,0.33625]];
-  const minX=Math.min(...outline.map(p=>p[0])),maxX=Math.max(...outline.map(p=>p[0])),minZ=Math.min(...outline.map(p=>p[1])),maxZ=Math.max(...outline.map(p=>p[1]));
-  const wedgeHeight=(x,z)=>.58-.26*(z-minZ)/(maxZ-minZ)-.025*(x-minX)/(maxX-minX);
-  const quartz=siteStonePrism('White quartz · cut wedge beside basin',outline,wedgeHeight,.025,quartzMaterial);
-  // Normalized coordinates keep the fracture veins on every face, including negative local X.
-  const quartzGeometry=quartz.geometry.toNonIndexed(),positions=quartzGeometry.attributes.position,coordinates=quartzGeometry.attributes.uv;
-  for(let i=0;i<positions.count;i+=3){
-    const a=new L().fromBufferAttribute(positions,i),b=new L().fromBufferAttribute(positions,i+1),c=new L().fromBufferAttribute(positions,i+2);
-    const normal=b.clone().sub(a).cross(c.clone().sub(a)).normalize();
-    for(let j=0;j<3;j++){const x=positions.getX(i+j),y=positions.getY(i+j),z=positions.getZ(i+j);coordinates.setXY(i+j,Math.abs(normal.y)>.5?(x-minX)/(maxX-minX):Math.abs(normal.z)>Math.abs(normal.x)?(x-minX)/(maxX-minX):(z-minZ)/(maxZ-minZ),Math.abs(normal.y)>.5?(z-minZ)/(maxZ-minZ):y/.60);}
-  }
-  quartz.geometry.dispose();quartz.geometry=quartzGeometry;quartzMaterial.bumpMap=quartzMaterial.map;quartzMaterial.bumpScale=.0009;
+  const minX=Math.min(...outline.map(p=>p[0])),maxX=Math.max(...outline.map(p=>p[0]));
+  const minZ=Math.min(...outline.map(p=>p[1])),maxZ=Math.max(...outline.map(p=>p[1]));
+  const centerX=outline.reduce((sum,p)=>sum+p[0],0)/outline.length;
+  const centerZ=outline.reduce((sum,p)=>sum+p[1],0)/outline.length;
+  const random=Rs(2811);
+  const makeStoneTexture=(top)=>{
+    const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1024;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle=top?'#b8c0bc':'#929e9e';ctx.fillRect(0,0,1024,1024);
+    for(let i=0;i<2500;i++){
+      const x=random()*1024,y=random()*1024,r=1+random()*18;
+      const pale=random()>.44;
+      ctx.fillStyle=pale?'rgba(224,224,209,.12)':'rgba(55,70,72,.095)';
+      ctx.beginPath();ctx.ellipse(x,y,r,r*(.2+random()*.35),random()*2,0,Math.PI*2);ctx.fill();
+    }
+    for(let i=0;i<18000;i++){
+      const n=top?random()*80+130:random()*90+70;
+      ctx.fillStyle=`rgba(${n|0},${(n+5)|0},${(n+4)|0},${.06+random()*.12})`;
+      ctx.fillRect(random()*1024,random()*1024,1+random()*2,1+random()*2);
+    }
+    if(top){
+      // Pale diagonal quartz seam and darker cleavage, visible in the supplied rear view.
+      const seam=[[70,155],[232,239],[398,405],[509,510],[675,639],[811,811],[982,863]];
+      ctx.lineJoin='round';ctx.lineCap='round';
+      const drawSeam=(offset,width,color)=>{
+        ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();
+        seam.forEach(([x,y],i)=>i?ctx.lineTo(x,y+offset):ctx.moveTo(x,y+offset));ctx.stroke();
+      };
+      drawSeam(0,42,'rgba(218,222,207,.6)');
+      drawSeam(8,9,'rgba(89,105,108,.58)');
+      drawSeam(15,2,'rgba(63,78,80,.45)');
+      ctx.strokeStyle='rgba(88,100,100,.27)';ctx.lineWidth=3;ctx.beginPath();
+      ctx.moveTo(410,8);ctx.lineTo(489,141);ctx.lineTo(570,210);ctx.lineTo(590,375);ctx.stroke();
+    } else {
+      // Narrow bedding marks continue around the broken vertical sides.
+      for(let i=0;i<37;i++){
+        const y=random()*1024;
+        ctx.strokeStyle=`rgba(${random()>.5?'217,219,207':'39,53,57'},${.035+random()*.08})`;
+        ctx.lineWidth=.5+random()*2;ctx.beginPath();ctx.moveTo(0,y);
+        ctx.lineTo(350,y+random()*8-4);ctx.lineTo(800,y+random()*9-4);ctx.lineTo(1024,y+random()*9-4);ctx.stroke();
+      }
+      for(let i=0;i<190;i++){
+        const x=random()*1024,y=random()*1024;
+        ctx.strokeStyle=random()>.5?'rgba(42,54,58,.13)':'rgba(208,215,207,.12)';
+        ctx.lineWidth=1+random()*2;ctx.beginPath();ctx.moveTo(x,y);
+        ctx.lineTo(x+2+random()*16,y+8+random()*45);ctx.stroke();
+      }
+    }
+    return mi(canvas,true,false);
+  };
+  const topMap=makeStoneTexture(true),sideMap=makeStoneTexture(false);
+  const topMat=new Ce({map:topMap,bumpMap:topMap,bumpScale:.0035,roughness:.98,metalness:0,side:De,flatShading:true,name:'White rock · weathered quartz vein'});
+  const sideMat=new Ce({map:sideMap,bumpMap:sideMap,bumpScale:.006,roughness:.98,metalness:0,side:De,flatShading:true,name:'White rock · grey fractured sides'});
+  const lowMat=new Ce({map:sideMap,bumpMap:sideMap,bumpScale:.009,color:'#c9cece',roughness:1,metalness:0,side:De,flatShading:true,name:'White rock · darker undercut'});
+  const zRatio=z=>(z-minZ)/(maxZ-minZ);
+  const ring=(inset,height)=>outline.map(([x,z],i)=>{
+    const a=x+(centerX-x)*inset,b=z+(centerZ-z)*inset;
+    return [a,height(x,z,i),b];
+  });
+  const base=ring(0,()=>.02);
+  const lower=ring(.018,(x,z,i)=>.095+.025*Math.sin(i*2.7));
+  const rim=ring(.045,(x,z,i)=>.23+.17*(1-zRatio(z))+.012*Math.sin(i*2.2));
+  const crown=ring(.09,(x,z,i)=>.28+.18*(1-zRatio(z))+.010*Math.sin(i*2.2+.6));
+  const mesh=(name,material,triangles)=>{
+    const positions=[],uvs=[];
+    for(const tri of triangles)for(const p of tri){
+      positions.push(...p);
+      uvs.push((p[0]-minX)/(maxX-minX),(p[2]-minZ)/(maxZ-minZ));
+    }
+    const geometry=new Se();geometry.setAttribute('position',new ne(new Float32Array(positions),3));
+    geometry.setAttribute('uv',new ne(new Float32Array(uvs),2));geometry.computeVertexNormals();
+    const result=new ae(geometry,material);result.name=name;result.castShadow=true;result.receiveShadow=true;return result;
+  };
+  const strip=(a,b)=>{
+    const tris=[];
+    for(let i=0;i<a.length;i++){
+      const j=(i+1)%a.length;
+      tris.push([a[i],a[j],b[i]],[a[j],b[j],b[i]]);
+    }
+    return tris;
+  };
+  const topTriangles=strip(rim,crown);
+  const cap=En.triangulateShape(crown.map(p=>new ht(p[0],p[2])),[]);
+  for(const [a,b,c] of cap)topTriangles.push([crown[a],crown[b],crown[c]]);
+  const quartz=new Ke();quartz.name='White quartz · fractured block beside basin';
+  quartz.add(mesh('Quartz · broad veined top',topMat,topTriangles));
+  quartz.add(mesh('Quartz · chipped upper faces',sideMat,strip(lower,rim)));
+  quartz.add(mesh('Quartz · shadowed lower face',lowMat,strip(base,lower)));
   quartz.position.set(core.poolCenter.x,0,core.poolCenter.z);core.exportable.add(quartz);
-  // The two foreground stones flank the near edge of the same circular basin.
-  redStone.position.x=core.poolCenter.x+1.40228;redStone.position.z=core.poolCenter.z+0.67587;redStone.rotation.y=0.40023;redStone.scale.set(0.89234,1,0.80829);
-  redStone.userData.planReference="Latest user overhead overlay";quartz.userData.planReference="Latest user overhead outline and rear-quarter photograph";
+  redStone.position.x=core.poolCenter.x+1.40228;
+  redStone.position.z=core.poolCenter.z+0.67587;
+  redStone.rotation.y=.40023;
+  redStone.scale.set(.89234,1,.80829);
+  redStone.userData.planReference='Latest user overhead overlay';
+  quartz.userData.planReference='Latest user overhead outline and rear-quarter photograph';
+  quartz.userData.reconstruction='Photographic silhouette and fractured faces; no survey of exact dimensions exists.';
   return {quartz,stoneTarget:new L(core.poolCenter.x+.65,.45,core.poolCenter.z+.8)};
 }
+
 
 // Courtyard materials and architecture follow the CIA and Gillogly photographs.
 // Building dimensions and planting positions are a visual reconstruction, not a survey.
@@ -5496,8 +5615,9 @@ function buildKryptosSiteAddon(lowSpec=false,core={}) {
   const compassPoly=[[-3.2,-1.65],[2.5,-1.70],[3.15,-.8],[3.0,1.35],[.75,1.70],[.2,1.18],[-.70,1.68],[-3.10,1.55]];
   const compassSlab=siteStonePrism('Compass slab · broad flat granite',compassPoly,.66,.342,granite);compassSlab.position.set(-6.7,0,-65.5);entrance.add(compassSlab);
 
-  // This traces the actual four-letter rose and long unfilled kite-shaped needle.
-  // The reported ~220° is the engraved N's approximate world bearing, not the needle.
+  // The engraved N has the reported approximate 220-degree bearing. Keep the
+  // photographed N/E/S/W order and place the viewing camera on the photographed
+  // side of the slab; the earlier camera looked from the lodestone side.
   const trueNorth=new L(1,0,-1).normalize(),trueEast=new L(1,0,1).normalize();
   const bearing=degrees=>trueNorth.clone().multiplyScalar(Math.cos(degrees*Math.PI/180)).addScaledVector(trueEast,Math.sin(degrees*Math.PI/180));
   const engravedNorth=bearing(220),engravedEast=bearing(310);
@@ -5534,25 +5654,62 @@ function buildKryptosSiteAddon(lowSpec=false,core={}) {
   lodestone.material.flatShading=true;lodestone.position.copy(lodestonePosition);entrance.add(lodestone);
   carving.userData={reportedEngravedNorthBearing:220,worldBearingIsApproximate:true,needleRelativeToEngravedNorth:247.4,needleDirection:needleDirection.toArray(),photoReference:'https://www.cia.gov/static/9ff42ea035bb1e7aba9591db8beeaefb/63012/kryptos_sculpture_2_lg.jpg'};
   label('Compass carving · needle toward lodestone',compassAnchor.clone().add(new L(0,1.6,1.3)),4.1);
-  label('True north in the scene',compassAnchor.clone().addScaledVector(trueNorth,2.3).add(new L(0,1.1,0)),2.6);
+  label('Geographic north · different from engraved N',compassAnchor.clone().addScaledVector(trueNorth,2.3).add(new L(0,1.1,0)),2.6);
 
-  const morse={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..'};
-  const morseTexture=message=>{
-    const c=document.createElement('canvas');c.width=2048;c.height=160;const g=c.getContext('2d');g.fillStyle='#527f70';g.fillRect(0,0,2048,160);
-    const symbols=[];for(const letter of message){if(letter===' '){symbols.push({s:' ',w:5});continue;}for(const s of morse[letter]||'')symbols.push({s,w:s==='-'?3:1});symbols.push({s:' ',w:2});}
-    const unit=1920/symbols.reduce((a,b)=>a+b.w+1,0);let x=64;g.globalCompositeOperation='destination-out';
-    for(const a of symbols){if(a.s==='.') {g.beginPath();g.arc(x+unit/2,80,Math.max(3,unit*.42),0,Math.PI*2);g.fill();}if(a.s==='-')g.fillRect(x,71,a.w*unit,18);x+=(a.w+1)*unit;}
-    return mi(c,true,false);
+  // Explicit cutouts, transcribed from Gillogly's close-up photos and Wilson's
+  // line-by-line reading. A lone dot is retained even when it might be filler;
+  // the final isolated dash vanishes under stone and is not completed into a letter.
+  const morseBands=[
+    {name:'VIRTUALLY / DIGETAL',x:13.10,z:-64.03,width:7.24,rows:[
+      '. . ...- .. .-. - ..- .- .-.. .-.. -.-- . | . . . . . . .. -. ...- .. ... .. -... .-.. .',
+      '-.. .. --. . - .- .-.. . . . | .. -. - . .-. .--. .-. . - .- - .. -'
+    ]},
+    {name:'SHADOW / LUCID',x:6.30,z:-64.03,width:5.92,rows:[
+      '. . ... .... .- -.. --- .-- . . | ..-. --- .-. -.-. . ... . . . . .',
+      '.-.. ..- -.-. .. -.. . . . | -- . -- --- .-. -.-- .'
+    ]},
+    {name:'T IS YOUR / POSITION',x:-13.10,z:-64.03,width:7.24,rows:[
+      '- .. ... -.-- --- ..- .-. | .--. --- ... .. - .. --- -.'
+    ]},
+    {name:'SOS',x:19.90,z:-64.03,width:2.12,rows:['... --- ...']},
+    {name:'RQ',x:-19.90,z:-64.03,width:2.12,rows:['.-. --.-']}
+  ];
+  const morseTexture=rows=>{
+    const canvas=document.createElement('canvas'),g=canvas.getContext('2d');
+    canvas.width=4096;canvas.height=rows.length===2?320:192;
+    g.fillStyle='#4d796a';g.fillRect(0,0,canvas.width,canvas.height);
+    const margin=90,interSymbol=.76,interLetter=2.25;
+    rows.forEach((row,rowIndex)=>{
+      const tokens=row.split(' '),width=tokens.reduce((sum,token)=>sum+(token==='|'?6:([...token].reduce((a,ch)=>a+(ch==='-'?2.8:1)+interSymbol,0)+interLetter)),0);
+      const unit=(canvas.width-2*margin)/width,y=(rowIndex+1)*canvas.height/(rows.length+1);
+      let x=margin;
+      g.globalCompositeOperation='destination-out';
+      for(const token of tokens){
+        if(token==='|'){x+=6*unit;continue;}
+        for(const symbol of token){
+          if(symbol==='.'){
+            g.beginPath();g.arc(x+.5*unit,y,Math.min(10.5,unit*.43),0,Math.PI*2);g.fill();x+=unit+interSymbol*unit;
+          }else if(symbol==='-'){
+            const dash=2.8*unit,height=Math.min(17,unit*.72),radius=height/2;
+            g.beginPath();g.roundRect(x,y-height/2,dash,height,radius);g.fill();x+=dash+interSymbol*unit;
+          }
+        }
+        x+=interLetter*unit;
+      }
+      g.globalCompositeOperation='source-over';
+    });
+    return mi(canvas,true,false);
   };
-  const phrases=['SOS','T IS YOUR POSITION','LUCID MEMORY','SHADOW FORCES','VIRTUALLY INVISIBLE','DIGETAL INTERPRETATU','RQ'];
   const morsePositions=[];
-  phrases.forEach((phrase,i)=>{
-    const side=i<4?1:-1,x=side*(4.6+(i%4)*4.7),z=-64.18+(i%2)*.11;
-    const plane=new ae(new Rn(3.5,.34),new Ce({map:morseTexture(phrase),transparent:true,alphaTest:.2,metalness:.5,roughness:.62,side:De,name:'Perforated horizontal copper'}));
-    const recess=box(entrance,'Dark recess below perforated Morse copper',x,.328,z,3.5,.002,.34,mat(0x182f29,.96));
-    recess.rotation.y=-(i%3-1)*.025;
-    plane.name='Morse copper: '+phrase;plane.rotation.x=-Math.PI/2;plane.rotation.z=(i%3-1)*.025;plane.position.set(x,.333,z);entrance.add(plane);morsePositions.push(plane.position.clone());
-  });
+  for(const band of morseBands){
+    const depth=band.rows.length===2?.68:.36;
+    box(entrance,'Dark recess below perforated Morse copper',band.x,.328,band.z,band.width,.002,depth,mat(0x182f29,.96));
+    const plane=new ae(new Rn(band.width,depth),new Ce({map:morseTexture(band.rows),transparent:true,alphaTest:.2,metalness:.5,roughness:.62,side:De,name:'Photo-transcribed perforated copper'}));
+    plane.name='Morse copper: '+band.name;plane.rotation.x=-Math.PI/2;plane.position.set(band.x,.333,band.z);
+    plane.userData={observedMorseRows:band.rows,source:'Jim Gillogly photographs, 1999; John Wilson transcription',placementIsApproximate:true};
+    entrance.add(plane);morsePositions.push(plane.position.clone());
+  }
+  const phrases=['VIRTUALLY INVISIBLE','DIGETAL INTERPRETATI…','SHADOW FORCES','LUCID MEMORY','T IS YOUR POSITION','SOS','RQ'];
   label('Entrance outcrop · horizontal granite and copper',new L(0,2.3,-65.5),6.3);
   const pool=core.poolCenter||new L(1.2,0,.56),stonesTarget=pool.clone().add(new L(.65,.45,.8));
   const views={
@@ -5560,9 +5717,9 @@ function buildKryptosSiteAddon(lowSpec=false,core={}) {
     pond:{pos:new L(12,8,22),target:pond.position.clone(),fit:5.5},
     site:{pos:new L(48,73,70),target:new L(0,0,-25),fit:38},
     entrance:{pos:new L(4,11,-82),target:new L(0,.4,-65.5),fit:23},
-    compass:{pos:compassAnchor.clone().add(new L(0,5.2,3.1)),target:compassAnchor.clone().addScaledVector(needleDirection,.12),fit:2.15},
-    compassdetail:{pos:compassAnchor.clone().add(new L(.01,5.0,.08)),target:compassAnchor.clone(),fit:1.60},
-    morse:{pos:morsePositions[1].clone().add(new L(0,2.7,2.0)),target:morsePositions[1].clone(),fit:2.1},
+    compass:{pos:compassAnchor.clone().add(new L(-2.0,5.2,-3.1)),target:compassAnchor.clone().addScaledVector(needleDirection,.12),fit:2.15},
+    compassdetail:{pos:compassAnchor.clone().add(new L(-1.8,5.0,-2.7)),target:compassAnchor.clone(),fit:1.60},
+    morse:{pos:morsePositions[0].clone().add(new L(0,2.7,2.0)),target:morsePositions[0].clone(),fit:3.9},
     stones:{pos:stonesTarget.clone().add(new L(-.7,3.6,6.8)),target:stonesTarget,fit:3.2}
   };
   return {root,courtyard,entrance,architecture,labels,phrases,views,compassAnchor,needleDirection,lodestonePosition,carving,
