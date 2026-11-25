@@ -40,13 +40,15 @@ THE SOFTWARE.
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 #selectionOutline{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.edit-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:11px}.edit-modes button{font-size:.875rem;padding:8px}.number-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 7px;margin-top:10px}.number-grid label{font-size:.875rem;color:var(--muted)}input[type=number]{display:block;width:100%;min-width:0;margin-top:5px;padding:8px 6px;background:#111b22;color:var(--text);border:1px solid var(--edge);border-radius:6px;font-size:1rem}.fine-controls{border:0;padding:13px 0}.legend{max-width:70%;justify-content:flex-end}.legend span{white-space:nowrap}[hidden]{display:none!important}
 .identity h1 .creator-credit{display:block;margin-top:3px;font-size:11px;line-height:1.25;letter-spacing:.02em;font-weight:400;text-transform:none;color:var(--muted);opacity:.72}.return-link{margin:0 0 12px;font-size:.875rem}.return-link a{text-underline-offset:3px}
+.lighting-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}.lighting-presets button{padding:8px 5px;font-size:.875rem}
+.edit-modes{grid-template-columns:repeat(4,minmax(0,1fr))}.paper-controls[hidden]{display:none}.paper-note{font-size:.82rem;color:var(--muted);margin:8px 0 0}.stage{background:radial-gradient(ellipse at 50% 42%,#45545b 0,#252e34 78%)}
 </style>
 </head>
 <body>
-<header><div class="identity"><div class="mark" aria-hidden="true"></div><h1>KRYPTOS<span>Sculpture lab</span><small class="creator-credit">by Kate Mercier</small></h1></div><p>Fold · separate · compare</p><button id="mobile-toggle">Controls</button></header>
+<header><div class="identity"><div class="mark" aria-hidden="true"></div><h1>KRYPTOS<span>Sculpture lab</span><small class="creator-credit">by Kate Mercier</small></h1></div><p>Roll · fold · separate · compare</p><button id="mobile-toggle">Controls</button></header>
 <main class="app">
 <section class="stage" aria-label="Interactive copper screen workspace">
-<canvas id="scene" aria-label="Kryptos copper screen. Select a panel and choose Move or Rotate to drag it independently." tabindex="0"></canvas>
+<canvas id="scene" aria-label="Kryptos copper screen. Select a panel and choose Move, Rotate or Bend to manipulate it." tabindex="0"></canvas>
 <canvas id="selectionOutline" aria-hidden="true"></canvas>
 <div class="hud"><span class="badge" id="modeBadge">Original sculpture</span><div class="legend"><span><i class="swatch a"></i><span id="labelA">A · Ciphertext</span></span><span><i class="swatch b"></i><span id="labelB">B · Tableau</span></span></div></div>
 <div class="view-tools" role="group" aria-label="Camera views"><button data-camera="oblique">3D view</button><button data-camera="front">Front</button><button data-camera="back">Back</button><button data-camera="edge">Edge</button><button id="fit">Fit to screen</button></div>
@@ -55,13 +57,31 @@ THE SOFTWARE.
 <div id="loader"><div><strong>Preparing the copper screen</strong><p id="loadText">Keeping the cutout letters intact…</p><div class="progress"><i id="bar"></i></div></div></div>
 </section>
 <aside class="controls" id="controls" aria-label="Sculpture controls">
-<nav class="return-link" aria-label="Other Kryptos tools"><a href="https://kmseattle.github.io/Kryptos3D/">Back to courtyard model</a></nav>
-<p class="intro">Choose a panel, then move or rotate it directly in the model.</p>
+<nav class="return-link" aria-label="Other Kryptos tools"><a href="index.html">Back to courtyard model</a></nav>
+<p class="intro">Choose a panel to move or rotate it. Use Paper shaping to curl or crease the copper itself.</p>
 <section class="section"><h2 class="section-title">Start here</h2><div class="presets"><button data-preset="original" class="active">Original</button><button data-preset="flat">Flatten</button><button data-preset="fold">Fold in half</button><button data-preset="split">Separate</button><button data-preset="overlay">Overlay halves</button></div></section>
+<section class="section" id="paperShaping"><h2 class="section-title">Paper shaping</h2>
+<label for="shapeMode" class="label-row">Shape</label><select id="shapeMode"><option value="none">No extra bend</option><option value="roll">Roll into a cylinder</option><option value="crease">Fold along a crease</option></select>
+<label for="shapeTarget" class="label-row">Copper sheet</label><select id="shapeTarget"><option value="both">Both sheets together</option><option value="cipher">Ciphertext sheet</option><option value="tableau">Tableau sheet</option></select>
+<div class="paper-controls" id="rollControls" hidden><label for="rollEdge" class="label-row">Start rolling from</label><select id="rollEdge"><option value="left">Left edge</option><option value="right">Right edge</option></select>
+<label class="field"><span class="label-row">Roll angle <output id="rollValue">0°</output></span><input id="roll" type="range" min="-360" max="360" step="1" value="0"></label><p class="paper-note">Drag toward positive or negative angles to roll toward either side.</p></div>
+<div class="paper-controls" id="creaseControls" hidden><label for="creaseAxis" class="label-row">Crease direction</label><select id="creaseAxis"><option value="vertical">Vertical</option><option value="horizontal">Horizontal</option></select>
+<label class="field"><span class="label-row">Crease position <output id="creasePositionValue">50%</output></span><input id="creasePosition" type="range" min=".05" max=".95" step=".01" value=".5"></label>
+<label class="field"><span class="label-row">Fold angle <output id="creaseAngleValue">0°</output></span><input id="creaseAngle" type="range" min="-180" max="180" step="1" value="0"></label>
+<label class="field"><span class="label-row">Fold radius <output id="creaseSoftnessValue">0.18 m</output></span><input id="creaseSoftness" type="range" min=".08" max=".5" step=".01" value=".18"></label></div>
+<p class="paper-note">Shapes follow the cutout letters. Select Bend sheet below to adjust the active shape by dragging.</p></section>
 <section class="section"><h2 class="section-title">Panel appearance</h2><label for="appearance" class="label-row">Surface colours</label><select id="appearance"><option value="weathered">Weathered copper · original texture</option><option value="fresh">Fresh copper</option><option value="halves">Compare halves · copper & teal</option><option value="panels">Compare four panels</option></select></section>
+<details id="lightingControls"><summary>Lighting</summary><div class="section">
+<label class="field"><span class="label-row">Brightness <output id="lightBrightnessValue">125%</output></span><input id="lightBrightness" type="range" min="0" max="3" step=".05" value="1.25"></label>
+<label class="field"><span class="label-row">Light direction <output id="lightAzimuthValue">23°</output></span><input id="lightAzimuth" type="range" min="-180" max="180" step="1" value="23"></label>
+<label class="field"><span class="label-row">Light height <output id="lightElevationValue">42°</output></span><input id="lightElevation" type="range" min="-80" max="85" step="1" value="42"></label>
+<label class="field"><span class="label-row">Soft fill <output id="lightFillValue">90%</output></span><input id="lightFill" type="range" min="0" max="1" step=".01" value=".9"></label>
+<div class="lighting-presets" role="group" aria-label="Lighting presets"><button data-light="soft">Soft</button><button data-light="side">Side light</button><button data-light="reset">Reset light</button></div>
+<p class="mini">Move the light around the screen; soft fill lifts the darker faces. Lighting is included when you save settings.</p>
+</div></details>
 <section class="section" id="individualPanels"><h2 class="section-title">Move individual panels</h2>
 <label for="selectedPanel" class="label-row">Selected panel</label><select id="selectedPanel"><option value="0">Ciphertext · top</option><option value="1">Ciphertext · bottom</option><option value="2">Tableau · top</option><option value="3">Tableau · bottom</option></select>
-<div class="edit-modes" role="group" aria-label="Drag action"><button data-edit="orbit" aria-pressed="true">Orbit</button><button data-edit="move" aria-pressed="false">Move</button><button data-edit="rotate" aria-pressed="false">Rotate</button></div>
+<div class="edit-modes" role="group" aria-label="Drag action"><button data-edit="orbit" aria-pressed="true">Orbit</button><button data-edit="move" aria-pressed="false">Move</button><button data-edit="rotate" aria-pressed="false">Rotate</button><button data-edit="bend" aria-pressed="false">Bend sheet</button></div>
 <p class="mini" id="editHelp">Click a panel to select it. Drag to orbit the camera.</p>
 <label class="field" id="rotationAxisField" hidden><span class="label-row">Rotate about</span><select id="rotationAxis"><option value="y">Y · turn left or right</option><option value="x">X · tilt forward or back</option><option value="z">Z · spin in place</option></select></label>
 <details class="fine-controls"><summary>Fine adjustments for this panel</summary><p class="mini">Position in metres; rotation in degrees.</p><div class="number-grid">
@@ -4581,7 +4601,43 @@ function labRotate(p, x, y, z) {
   a = Math.cos(z); b = Math.sin(z);
   return { x: q.x * a - q.y * b, y: q.x * b + q.y * a, z: q.z };
 }
-function labRawPoint(u, v, w, moving, state, curve, dimensions) {
+function labBendPath(distance, length, state) {
+  if(state.shapeMode==='roll') {
+    const total=state.roll*Math.PI/180;
+    if(Math.abs(total)<1e-6)return {at:distance,depth:0,tangent:1,normal:0};
+    const fromRight=state.rollEdge==='right',s=fromRight?length-distance:distance;
+    const radius=length/Math.abs(total),angle=s/length*Math.abs(total),side=Math.sign(total);
+    return {at:fromRight?length-radius*Math.sin(angle):radius*Math.sin(angle),depth:side*radius*(1-Math.cos(angle)),tangent:Math.cos(angle),normal:(fromRight?-1:1)*side*Math.sin(angle)};
+  }
+  const angle=state.creaseAngle*Math.PI/180;
+  if(Math.abs(angle)<1e-6)return {at:distance,depth:0,tangent:1,normal:0};
+  const center=length*state.creasePosition,half=Math.min(state.creaseSoftness,center,length-center),left=center-half,right=center+half;
+  if(distance<=left)return {at:distance,depth:0,tangent:1,normal:0};
+  const arc=2*half,radius=arc/angle;
+  if(distance<right){const turn=angle*(distance-left)/arc;return {at:left+radius*Math.sin(turn),depth:radius*(1-Math.cos(turn)),tangent:Math.cos(turn),normal:Math.sin(turn)};}
+  return {at:left+radius*Math.sin(angle)+(distance-right)*Math.cos(angle),depth:radius*(1-Math.cos(angle))+(distance-right)*Math.sin(angle),tangent:Math.cos(angle),normal:Math.sin(angle)};
+}
+function labPaperPoint(u,v,w,side,state,dimensions) {
+  if(state.shapeMode==='none'||(state.shapeTarget!=='both'&&state.shapeTarget!==side))return null;
+  const width=dimensions.length,height=dimensions.height;
+  if(state.shapeMode==='crease'&&state.creaseAxis==='horizontal'){
+    const p=labBendPath(v,height,state);
+    return {x:u-width/2,y:p.at-height/2-p.normal*w,z:p.depth+p.tangent*w};
+  }
+  const begin=state.shapeTarget==='both'?0:side==='cipher'?0:width/2;
+  const span=state.shapeTarget==='both'?width:width/2;
+  const p=labBendPath(u-begin,span,state);
+  return {x:begin+p.at-width/2-p.normal*w,y:v-height/2,z:p.depth+p.tangent*w};
+}
+function labRawPoint(u, v, w, moving, state, curve, dimensions, side=u<dimensions.length/2?'cipher':'tableau') {
+  const shaped=labPaperPoint(u,v,w,side,state,dimensions);
+  if(shaped){
+    if(moving&&state.axis==='width'){
+      const angle=state.fold*Math.PI/180,x=shaped.x*Math.cos(angle)+shaped.z*Math.sin(angle);
+      shaped.z=-shaped.x*Math.sin(angle)+shaped.z*Math.cos(angle);shaped.x=x;
+    }
+    return shaped;
+  }
   const mid = dimensions.length / 2, halfHeight = dimensions.height / 2;
   const f = curve.frame(u, {}), center = curve.frame(mid, {}), t = state.flatten;
   let tx = (1 - t) * f.tx + t, tz = (1 - t) * f.tz;
@@ -4607,8 +4663,8 @@ function labTransform(state, curve, dimensions) {
   const centerA = labRawPoint(...aUV, 0, false, state, curve, dimensions);
   const centerB = labRawPoint(...bUV, 0, true, state, curve, dimensions);
   const destination = state.stack ? centerA : centerB;
-  return function (u, v, w, moving) {
-    let p = labRawPoint(u, v, w, moving, state, curve, dimensions);
+  return function (u, v, w, moving, side) {
+    let p = labRawPoint(u, v, w, moving, state, curve, dimensions, side);
     if (!moving) return p;
     p = { x: p.x - centerB.x, y: p.y - centerB.y, z: p.z - centerB.z };
     if (state.mirror) p.x *= -1;
@@ -4625,10 +4681,10 @@ function labEmptyPanels() { return Array.from({length:4},()=>({x:0,y:0,z:0,rx:0,
 function labIndividualTransform(base, plate, pose, dimensions, moving) {
   const u = dimensions.length * (plate.side === 'cipher' ? .25 : .75);
   const v = dimensions.height * (plate.upper ? .75 : .25);
-  const center = base(u,v,0,moving);
+  const center = base(u,v,0,moving,plate.side);
   const x = pose.rx * Math.PI/180, y = pose.ry * Math.PI/180, z = pose.rz * Math.PI/180;
   return function(u,v,w) {
-    const p = base(u,v,w,moving);
+    const p = base(u,v,w,moving,plate.side);
     const r = labRotate({x:p.x-center.x,y:p.y-center.y,z:p.z-center.z},x,y,z);
     return {x:r.x+center.x+pose.x,y:r.y+center.y+pose.y,z:r.z+center.z+pose.z};
   };
@@ -4642,27 +4698,54 @@ function labPlaneHit(ray, center, normal) {
   return {x:ray.origin.x+ray.direction.x*t,y:ray.origin.y+ray.direction.y*t,z:ray.origin.z+ray.direction.z*t};
 }
 
+function labLightDirection(azimuth,elevation) {
+  const a=azimuth*Math.PI/180,e=elevation*Math.PI/180;
+  return {x:Math.sin(a)*Math.cos(e),y:Math.sin(e),z:Math.cos(a)*Math.cos(e)};
+}
+function labTriangleLighting(points,viewer,lighting) {
+  const [a,b,c]=points,ux=b.x-a.x,uy=b.y-a.y,uz=b.z-a.z,vx=c.x-a.x,vy=c.y-a.y,vz=c.z-a.z;
+  let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+  const length=Math.hypot(nx,ny,nz)||1;nx/=length;ny/=length;nz/=length;
+  if(nx*(viewer.x-a.x)+ny*(viewer.y-a.y)+nz*(viewer.z-a.z)<0){nx=-nx;ny=-ny;nz=-nz;}
+  const key=Math.max(0,nx*lighting.direction.x+ny*lighting.direction.y+nz*lighting.direction.z);
+  const fill=Math.max(0,(nx*-4+ny*2+nz*-5)/Math.sqrt(45));
+  return Math.max(.35,lighting.brightness*(.58*lighting.fill+.8*key+.25*lighting.fill*fill));
+}
+
 /* The original renderer, lettering and screen dimensions are bundled above. */
-const LAB_DEFAULT = Object.freeze({axis:'width',flatten:0,fold:0,gap:0,stack:false,dx:0,dy:0,depth:0,rx:0,ry:0,rz:0,mirror:false,opacityA:1,opacityB:1,tint:false,appearance:'weathered'});
+const LAB_LIGHT_DEFAULTS=Object.freeze({lightBrightness:1.25,lightAzimuth:23,lightElevation:42,lightFill:.9});
+const LAB_LIGHT_RANGES={lightBrightness:[0,3],lightAzimuth:[-180,180],lightElevation:[-80,85],lightFill:[0,1]};
+const LAB_DEFAULT = Object.freeze({axis:'width',flatten:0,fold:0,gap:0,stack:false,dx:0,dy:0,depth:0,rx:0,ry:0,rz:0,mirror:false,opacityA:1,opacityB:1,tint:false,appearance:'weathered',shapeMode:'none',shapeTarget:'both',rollEdge:'left',roll:0,creaseAxis:'vertical',creasePosition:.5,creaseAngle:0,creaseSoftness:.18,...LAB_LIGHT_DEFAULTS});
 const LAB_PANEL_NAMES=['Ciphertext · top','Ciphertext · bottom','Tableau · top','Tableau · bottom'];
 const LAB_PANEL_COLOURS=['#e8ab79','#dfc66d','#71cabb','#a3afe8'];
 function labNewState() { return {...LAB_DEFAULT,panels:labEmptyPanels()}; }
-const LAB_RANGES = {flatten:[0,1],fold:[-180,180],gap:[0,2],dx:[-3.5,3.5],dy:[-3,3],depth:[-1,1],rx:[-180,180],ry:[-180,180],rz:[-180,180],opacityA:[0,1],opacityB:[0,1]};
+const LAB_RANGES = {flatten:[0,1],fold:[-180,180],gap:[0,2],dx:[-3.5,3.5],dy:[-3,3],depth:[-1,1],rx:[-180,180],ry:[-180,180],rz:[-180,180],opacityA:[0,1],opacityB:[0,1],roll:[-360,360],creasePosition:[.05,.95],creaseAngle:[-180,180],creaseSoftness:[.08,.5]};
 function labValidState(input) {
   if (!input || typeof input !== 'object') throw new Error('This file does not contain sculpture settings.');
-  if (!['kryptos-sculpture-lab-v1','kryptos-sculpture-lab-v2'].includes(input.format)) throw new Error('Choose a settings file saved by this Sculpture Lab.');
+  if (!['kryptos-sculpture-lab-v1','kryptos-sculpture-lab-v2','kryptos-sculpture-lab-v3'].includes(input.format)) throw new Error('Choose a settings file saved by this Sculpture Lab.');
   const result = labNewState(), supplied = input.state;
   if (!supplied || typeof supplied !== 'object') throw new Error('The settings are missing.');
   if (!['width','height'].includes(supplied.axis)) throw new Error('Unknown split direction.');
   result.axis = supplied.axis;
   for (const [key, [min,max]] of Object.entries(LAB_RANGES)) {
     const value = supplied[key];
+    if(value===undefined&&input.format!=='kryptos-sculpture-lab-v3'&&['roll','creasePosition','creaseAngle','creaseSoftness'].includes(key))continue;
     if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) throw new Error('Invalid value for ' + key + '.');
     result[key] = value;
   }
   for (const key of ['stack','mirror','tint']) {
     if (typeof supplied[key] !== 'boolean') throw new Error('Invalid value for ' + key + '.');
     result[key] = supplied[key];
+  }
+  for(const [key,allowed] of Object.entries({shapeMode:['none','roll','crease'],shapeTarget:['both','cipher','tableau'],rollEdge:['left','right'],creaseAxis:['vertical','horizontal']})){
+    if(supplied[key]===undefined&&input.format!=='kryptos-sculpture-lab-v3')continue;
+    if(!allowed.includes(supplied[key]))throw new Error('Invalid paper shaping value for '+key+'.');
+    result[key]=supplied[key];
+  }
+  for(const [key,[min,max]] of Object.entries(LAB_LIGHT_RANGES)){
+    if(supplied[key]===undefined)continue;
+    if(typeof supplied[key]!=='number'||!Number.isFinite(supplied[key])||supplied[key]<min||supplied[key]>max)throw new Error('Invalid lighting value for '+key+'.');
+    result[key]=supplied[key];
   }
   result.appearance=supplied.appearance===undefined?(supplied.tint?'halves':'weathered'):supplied.appearance;
   if(!['weathered','fresh','halves','panels'].includes(result.appearance))throw new Error('Unknown panel appearance.');
@@ -4678,7 +4761,7 @@ function labValidState(input) {
       }
       if(typeof p.visible!=='boolean')throw new Error('Invalid panel visibility.');pose.visible=p.visible;return pose;
     });
-  }else if(input.format==='kryptos-sculpture-lab-v2')throw new Error('Panel positions are missing.');
+  }else if(input.format!=='kryptos-sculpture-lab-v1')throw new Error('Panel positions are missing.');
   return result;
 }
 function labIsB(plate, state) { return state.axis === 'width' ? plate.side === 'tableau' : !plate.upper; }
@@ -4710,12 +4793,13 @@ function labPatches() {
 async function labMain() {
   let state=labNewState(), selectedPreset='original', canvas=fe('scene');
   let renderer=null, ctx=null, model=null, plates=[], patches=[], controls=null;
+  let hemiLight=null,keyLight=null,fillLight=null,backLight=null,softwareLighting=null;
   let geometryDirty=true, drawDirty=true, shouldFit=true, sceneWidth=1, sceneHeight=1;
   let bounds={min:[-3,-1.5,-1],max:[3,1.5,1]}, transform=null;
   const curve=new Nr(St.length), scene=new Hn(), camera=new Ge(38,1,.05,100);
   const copperGroup=new Ke(); copperGroup.name='Kryptos copper screen · Sculpture Lab'; scene.add(copperGroup);
   const notice=message=>{fe('status').textContent=message;};
-  const degrees=new Set(['fold','rx','ry','rz']);
+  const degrees=new Set(['fold','rx','ry','rz','roll','creaseAngle','lightAzimuth','lightElevation']);
   const materials=[[],[]], raycaster=new vr(), pointerNDC=new ht();
   let selectedPanel=0,editMode='orbit',rotationAxis='y',drag=null;
   let individualTransforms=[],textures=null,softwareMask=null,softwareSkins=new Map(),softwareLayers=[];
@@ -4733,9 +4817,9 @@ async function labMain() {
     fe('panelOpacity').value=String(pose.opacity);fe('panelOpacityValue').textContent=Math.round(pose.opacity*100)+'%';fe('panelVisible').checked=pose.visible;
     for(const button of document.querySelectorAll('[data-edit]'))button.setAttribute('aria-pressed',String(button.dataset.edit===editMode));
     fe('rotationAxisField').hidden=editMode!=='rotate';fe('rotationAxis').value=rotationAxis;
-    const instructions={orbit:'Click a panel to select it. Drag to orbit the camera.',move:'Drag a panel to move it. Drag empty space to orbit the camera.',rotate:'Drag a panel to rotate it around the chosen axis. Drag empty space to orbit.'};
+    const instructions={orbit:'Click a panel to select it. Drag to orbit the camera.',move:'Drag a panel to move it. Drag empty space to orbit the camera.',rotate:'Drag a panel to rotate it around the chosen axis. Drag empty space to orbit.',bend:'Drag a sheet left or right to roll or fold it. Drag up or down to move the crease. Drag empty space to orbit.'};
     fe('editHelp').textContent=instructions[editMode];fe('gestureHint').textContent=editMode==='orbit'?'Drag to orbit · pinch or scroll to zoom · click a panel to select it':instructions[editMode];
-    canvas.style.cursor=editMode==='orbit'?'grab':editMode==='move'?'move':'crosshair';drawDirty=true;
+    canvas.style.cursor=editMode==='orbit'?'grab':editMode==='move'?'move':editMode==='bend'?'ew-resize':'crosshair';drawDirty=true;
   }
   function selectPanel(index) {selectedPanel=index;syncPanelUI();notice('Selected '+LAB_PANEL_NAMES[index]+'.');}
   function pointOnPanel(plate,u,v,w=0) { return individualTransforms[labPanelIndex(plate)](u,v,w); }
@@ -4771,25 +4855,33 @@ async function labMain() {
       if(event.button!==0||!event.isPrimary||!model)return;
       const index=pickPanel(event);if(index<0)return;
       if(editMode==='orbit'){orbitClick={index,x:event.clientX,y:event.clientY};return;}
+      if(editMode==='bend'){
+        if(state.shapeMode==='none')state.shapeMode='crease';
+        state.shapeTarget=plates[index].side;state.flatten=1;state.fold=0;
+        selectedPreset='custom';syncUI();updateGeometry();
+      }
       selectPanel(index);const plate=plates[index],u=St.length*(plate.side==='cipher'?.25:.75),v=St.height*(plate.upper?.75:.25);
       const center=pointOnPanel(plate,u,v),normal=camera.getWorldDirection(new L());setRay(event);
       const startHit=labPlaneHit(raycaster.ray,center,normal);if(!startHit)return;
       const screen=projected(center),rect=canvas.getBoundingClientRect();
-      drag={id:event.pointerId,index,center,normal,startHit,pose:{...state.panels[index]},x:event.clientX,y:event.clientY,screenX:rect.left+screen[0],screenY:rect.top+screen[1]};
+      drag={id:event.pointerId,index,center,normal,startHit,pose:{...state.panels[index]},paper:{roll:state.roll,angle:state.creaseAngle,position:state.creasePosition},x:event.clientX,y:event.clientY,screenX:rect.left+screen[0],screenY:rect.top+screen[1]};
       drag.startAngle=Math.atan2(event.clientY-drag.screenY,event.clientX-drag.screenX);
       controls.enabled=false;canvas.setPointerCapture(event.pointerId);event.preventDefault();event.stopImmediatePropagation();
     },true);
     canvas.addEventListener('pointermove',event=>{
       if(!drag||event.pointerId!==drag.id)return;
       const pose=state.panels[drag.index];
-      if(editMode==='move'){
+      if(editMode==='bend'){
+        if(state.shapeMode==='roll')state.roll=clamp(drag.paper.roll+(event.clientX-drag.x)*.65,-360,360);
+        else {state.creaseAngle=clamp(drag.paper.angle+(event.clientX-drag.x)*.55,-180,180);state.creasePosition=clamp(drag.paper.position+(event.clientY-drag.y)/sceneHeight,.05,.95);}
+      }else if(editMode==='move'){
         setRay(event);const hit=labPlaneHit(raycaster.ray,drag.center,drag.normal);
         if(hit)for(const key of ['x','y','z'])pose[key]=clamp(drag.pose[key]+hit[key]-drag.startHit[key],-10,10);
       }else{
         const angle=rotationAxis==='x'?(event.clientY-drag.y)*.6:rotationAxis==='y'?(event.clientX-drag.x)*.6:(Math.atan2(event.clientY-drag.screenY,event.clientX-drag.screenX)-drag.startAngle)*-180/Math.PI;
         pose['r'+rotationAxis]=wrap(drag.pose['r'+rotationAxis]+angle);
       }
-      selectedPreset='custom';geometryDirty=true;drawDirty=true;pointer.active=false;syncPanelUI();event.preventDefault();event.stopImmediatePropagation();
+      selectedPreset='custom';geometryDirty=true;drawDirty=true;pointer.active=false;if(editMode==='bend')syncUI();else syncPanelUI();event.preventDefault();event.stopImmediatePropagation();
     },true);
     const finish=event=>{
       if(drag&&event.pointerId===drag.id){
@@ -4807,8 +4899,9 @@ async function labMain() {
       const el=fe(id); if(!el) continue;
       if (typeof value==='boolean') el.checked=value; else el.value=String(value);
       const output=fe(id+'Value');
-      if(output) output.textContent=degrees.has(id)?Math.round(value)+'°':id==='flatten'||id.startsWith('opacity')?Math.round(value*100)+'%':value.toFixed(id==='depth'?3:2)+' m';
+      if(output) output.textContent=degrees.has(id)?Math.round(value)+'°':id==='flatten'||id==='creasePosition'||id.startsWith('opacity')||id==='lightBrightness'||id==='lightFill'?Math.round(value*100)+'%':value.toFixed(id==='depth'?3:2)+' m';
     }
+    fe('rollControls').hidden=state.shapeMode!=='roll';fe('creaseControls').hidden=state.shapeMode!=='crease';
     fe('axisNote').textContent=(state.axis==='width'?'Half B is the tableau.':'Half B is the lower half of both pages.')+' Each panel can also move independently.';
     const legend=document.querySelector('.hud .legend');legend.hidden=!state.tint;
     if(state.appearance==='panels')legend.innerHTML=LAB_PANEL_NAMES.map((name,i)=>'<span><i class="swatch" style="background:'+LAB_PANEL_COLOURS[i]+'"></i>'+name+'</span>').join('');
@@ -4820,7 +4913,7 @@ async function labMain() {
     geometryDirty=true; drawDirty=true;
   }
   function applyPreset(name, keepAxis=true) {
-    const axis=keepAxis?state.axis:'width',appearance=state.appearance;state={...labNewState(),axis,appearance,tint:state.tint};selectedPreset=name;
+    const axis=keepAxis?state.axis:'width',appearance=state.appearance,lighting=Object.fromEntries(Object.keys(LAB_LIGHT_DEFAULTS).map(key=>[key,state[key]]));state={...labNewState(),axis,appearance,tint:state.tint,...lighting};selectedPreset=name;
     if(name==='flat')state.flatten=1;
     if(name==='fold')Object.assign(state,{flatten:1,fold:180,depth:.03,opacityB:.65});
     if(name==='split')Object.assign(state,{flatten:1,gap:.55});
@@ -4830,16 +4923,22 @@ async function labMain() {
     notice(name==='fold'?'Half B is folded 180° onto A. Adjust its opacity to compare the cutouts.':name==='overlay'?'Half B is translated over A. Rotate, turn over or mirror it independently.':'');
   }
   let pendingCamera='oblique';
+  function updateLighting(){
+    const direction=labLightDirection(state.lightAzimuth,state.lightElevation),brightness=state.lightBrightness,fill=state.lightFill/LAB_LIGHT_DEFAULTS.lightFill;
+    softwareLighting={direction,brightness,fill};
+    if(keyLight){keyLight.position.set(direction.x*10,direction.y*10,direction.z*10);keyLight.intensity=3.4*brightness;hemiLight.intensity=3.2*brightness*fill;fillLight.intensity=2.2*brightness*fill;backLight.intensity=1.5*brightness*fill;}
+    drawDirty=true;
+  }
   function updateMaterials() {
     const surface=textures&&(state.appearance==='weathered'?textures.today:state.appearance==='fresh'?textures.fresh:null);
     for(const item of plates){
       const moving=labIsB(item,state),pose=state.panels[item.index],alpha=(moving?state.opacityB:state.opacityA)*pose.opacity;
       for(const [index,material] of [item.matA,item.matB].entries()){
         material.opacity=alpha;material.transparent=alpha<.999;material.depthWrite=alpha>=.999;
-        material.map=index===0&&surface?surface.map:null;
-        material.roughnessMap=index===0&&surface?surface.orm:null;material.metalnessMap=material.roughnessMap;
-        material.roughness=surface?1:.72;material.metalness=surface?1:.2;
-        material.color.set(surface?(index===0?'#ffffff':'#4a2a1c'):state.appearance==='panels'?LAB_PANEL_COLOURS[item.index]:moving?'#71cabb':'#d6a079');
+        material.map=surface?surface.map:null;
+        material.roughnessMap=surface?surface.orm:null;material.metalnessMap=null;
+        material.roughness=surface ? .86 : .72;material.metalness=surface ? .24 : .2;
+        material.color.set(surface?'#ffffff':state.appearance==='panels'?LAB_PANEL_COLOURS[item.index]:moving?'#71cabb':'#d6a079');
         material.needsUpdate=true;
       }
       item.mesh.visible=pose.visible&&alpha>.001;item.pick.visible=item.mesh.visible;
@@ -4871,6 +4970,7 @@ async function labMain() {
     Ls(1,'Ready');fe('loader').hidden=true;
   }
   function updateGeometry() {
+    updateLighting();
     transform=labTransform(state,curve,St);
     individualTransforms=plates.map(item=>labIndividualTransform(transform,item,state.panels[item.index],St,labIsB(item,state)));
     const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
@@ -4878,7 +4978,7 @@ async function labMain() {
     for(const item of plates) {
       const moving=labIsB(item,state), geometry=item.mesh.geometry, pos=geometry.attributes.position;
       item.mesh.renderOrder=moving?2:1;
-      const pose=state.panels[item.index],signature=JSON.stringify([state.axis,state.flatten,state.fold,state.gap,state.stack,state.dx,state.dy,state.depth,state.rx,state.ry,state.rz,state.mirror,pose.x,pose.y,pose.z,pose.rx,pose.ry,pose.rz]);
+      const pose=state.panels[item.index],signature=JSON.stringify([state.axis,state.flatten,state.fold,state.gap,state.stack,state.dx,state.dy,state.depth,state.rx,state.ry,state.rz,state.mirror,state.shapeMode,state.shapeTarget,state.rollEdge,state.roll,state.creaseAxis,state.creasePosition,state.creaseAngle,state.creaseSoftness,pose.x,pose.y,pose.z,pose.rx,pose.ry,pose.rz]);
       if(signature!==item.signature){
         const a=pos.array,base=item.original,point=individualTransforms[item.index];
         for(let i=0;i<a.length;i+=3) {
@@ -4932,7 +5032,7 @@ async function labMain() {
     else{c.fillStyle=style;c.fillRect(0,0,width,height);}
     c.globalCompositeOperation='destination-in';c.drawImage(softwareMask,0,0);softwareSkins.set(style,skin);return skin;
   }
-  function textureTriangle(c,image,source,destination) {
+  function textureTriangle(c,image,source,destination,shade=1) {
     const [[x0,y0],[x1,y1],[x2,y2]]=source,[[u0,v0],[u1,v1],[u2,v2]]=destination;
     const det=x0*(y1-y2)+x1*(y2-y0)+x2*(y0-y1);if(Math.abs(det)<1e-8)return;
     const a=(u0*(y1-y2)+u1*(y2-y0)+u2*(y0-y1))/det,b=(v0*(y1-y2)+v1*(y2-y0)+v2*(y0-y1))/det;
@@ -4940,7 +5040,14 @@ async function labMain() {
     const f=(u0*(x1*y2-x2*y1)+u1*(x2*y0-x0*y2)+u2*(x0*y1-x1*y0))/det,g=(v0*(x1*y2-x2*y1)+v1*(x2*y0-x0*y2)+v2*(x0*y1-x1*y0))/det;
     c.save();c.beginPath();const cx=(u0+u1+u2)/3,cy=(v0+v1+v2)/3;
     for(const [i,p] of destination.entries()){const dx=p[0]-cx,dy=p[1]-cy,length=Math.hypot(dx,dy)||1,x=p[0]+dx/length*.45,y=p[1]+dy/length*.45;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}
-    c.closePath();c.clip();c.transform(a,b,d,e,f,g);c.drawImage(image,0,0);c.restore();
+    c.closePath();c.clip();c.save();c.transform(a,b,d,e,f,g);c.drawImage(image,0,0);c.restore();
+    if(Math.abs(shade-1)>.005){
+      c.globalCompositeOperation='source-atop';
+      c.fillStyle=shade<1?'rgba(0,0,0,'+(1-shade)+')':'rgba(255,255,255,'+(1-1/shade)+')';
+      const minX=Math.min(u0,u1,u2)-2,minY=Math.min(v0,v1,v2)-2,maxX=Math.max(u0,u1,u2)+2,maxY=Math.max(v0,v1,v2)+2;
+      c.fillRect(minX,minY,maxX-minX,maxY-minY);
+    }
+    c.restore();
   }
   function drawSoftware() {
     const ratio=canvas.width/sceneWidth;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,sceneWidth,sceneHeight);
@@ -4954,8 +5061,8 @@ async function labMain() {
       const u0=plate.side==='cipher'?0:St.length/2,v0=plate.upper?St.height/2:0;
       for(let row=0;row<4;row++)for(let col=0;col<30;col++){
         const u=u0+col/30*St.length/2,v=v0+row/4*St.height/2,du=St.length/60,dv=St.height/8;
-        const uv=[[u,v],[u+du,v],[u+du,v+dv],[u,v+dv]],source=uv.map(([a,b])=>[a/St.length*skin.width,(1-b/St.height)*skin.height]),dest=uv.map(([a,b])=>projected(pointOnPanel(plate,a,b)));
-        for(const ids of [[0,1,2],[0,2,3]])textureTriangle(c,skin,ids.map(i=>source[i]),ids.map(i=>dest[i]));
+        const uv=[[u,v],[u+du,v],[u+du,v+dv],[u,v+dv]],source=uv.map(([a,b])=>[a/St.length*skin.width,(1-b/St.height)*skin.height]),world=uv.map(([a,b])=>pointOnPanel(plate,a,b)),dest=world.map(projected);
+        for(const ids of [[0,1,2],[0,2,3]])textureTriangle(c,skin,ids.map(i=>source[i]),ids.map(i=>dest[i]),labTriangleLighting(ids.map(i=>world[i]),camera.position,softwareLighting));
       }
       const center=projected(pointOnPanel(plate,u0+St.length/4,v0+St.height/4));ordered.push({layer,alpha,depth:center[2]});
     }
@@ -4980,11 +5087,18 @@ async function labMain() {
     const url=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
   }
   function changed(id) {
-    state[id]=typeof LAB_DEFAULT[id]==='boolean'?fe(id).checked:['axis','appearance'].includes(id)?fe(id).value:Number(fe(id).value);
+    state[id]=typeof LAB_DEFAULT[id]==='boolean'?fe(id).checked:['axis','appearance','shapeMode','shapeTarget','rollEdge','creaseAxis'].includes(id)?fe(id).value:Number(fe(id).value);
     if(id==='appearance')state.tint=state.appearance==='halves'||state.appearance==='panels';
-    selectedPreset='custom';syncUI();
+    if(['shapeMode','shapeTarget','rollEdge','roll','creaseAxis','creasePosition','creaseAngle','creaseSoftness'].includes(id)&&state.shapeMode!=='none'){state.flatten=1;state.fold=0;}
+    if(['flatten','fold'].includes(id)&&state.shapeMode!=='none')state.shapeMode='none';
+    if(!(id in LAB_LIGHT_DEFAULTS))selectedPreset='custom';syncUI();
   }
-  for(const id of Object.keys(LAB_DEFAULT))if(id!=='axis'&&fe(id))fe(id).addEventListener(typeof LAB_DEFAULT[id]==='boolean'||id==='appearance'?'change':'input',()=>changed(id));
+  for(const id of Object.keys(LAB_DEFAULT))if(id!=='axis'&&fe(id))fe(id).addEventListener(typeof LAB_DEFAULT[id]==='boolean'||['appearance','shapeMode','shapeTarget','rollEdge','creaseAxis'].includes(id)?'change':'input',()=>changed(id));
+  for(const button of document.querySelectorAll('[data-light]'))button.addEventListener('click',()=>{
+    const preset=button.dataset.light;
+    Object.assign(state,preset==='soft'?{lightBrightness:1.3,lightAzimuth:30,lightElevation:45,lightFill:1}:preset==='side'?{lightBrightness:1.45,lightAzimuth:80,lightElevation:18,lightFill:.65}:LAB_LIGHT_DEFAULTS);
+    syncUI();
+  });
   fe('selectedPanel').addEventListener('change',()=>selectPanel(Number(fe('selectedPanel').value)));
   fe('rotationAxis').addEventListener('change',()=>{rotationAxis=fe('rotationAxis').value;syncPanelUI();});
   for(const button of document.querySelectorAll('[data-edit]'))button.addEventListener('click',()=>{editMode=button.dataset.edit;syncPanelUI();if(window.innerWidth<=680&&editMode!=='orbit')canvas.scrollIntoView({behavior:Yx?'auto':'smooth',block:'center'});});
@@ -5005,7 +5119,7 @@ async function labMain() {
   fe('turnOver').addEventListener('click',()=>{state.ry=state.ry===0?180:0;selectedPreset='custom';syncUI();});
   fe('rotate180').addEventListener('click',()=>{state.rz=state.rz===0?180:0;selectedPreset='custom';syncUI();});
   fe('mobile-toggle').addEventListener('click',()=>fe('controls').scrollIntoView({behavior:Yx?'auto':'smooth',block:'start'}));
-  fe('saveSettings').addEventListener('click',()=>download(JSON.stringify({format:'kryptos-sculpture-lab-v2',state},null,2),'kryptos-lab-settings.json','application/json'));
+  fe('saveSettings').addEventListener('click',()=>download(JSON.stringify({format:'kryptos-sculpture-lab-v3',state},null,2),'kryptos-lab-settings.json','application/json'));
   fe('loadSettings').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>100000)throw new Error('This settings file is too large.');const data=JSON.parse(await file.text());state=labValidState(data);selectedPreset='custom';syncUI();shouldFit=true;pendingCamera='front';notice('Settings loaded.');}catch(err){notice(err.message);}finally{e.target.value='';}});
   fe('fontFile').addEventListener('change',async e=>{
     const file=e.target.files[0];if(!file)return;e.target.disabled=true;
@@ -5018,9 +5132,9 @@ async function labMain() {
     try{if(geometryDirty)updateGeometry();const output=await new fi().parseAsync(copperGroup,{binary:true,onlyVisible:true,maxTextureSize:1024});download(output,'kryptos-sculpture-arrangement.glb','model/gltf-binary');notice('Current copper sculpture exported.');}catch(err){notice('Could not export: '+err.message);}finally{button.disabled=false;}
   });
   fe('downloadPage').addEventListener('click',async()=>{try{const response=await fetch(location.href,{credentials:'same-origin'});if(!response.ok)throw new Error('Download unavailable.');const text=await response.text();if(!text.includes('function labMain('))throw new Error('Use the standalone HTML provided with your model.');download(text,'Kryptos-Sculpture-Lab.html','text/html');notice('Standalone page downloaded. Save settings separately to keep this arrangement.');}catch(err){notice(err.message);}});
-  try {renderer=new za({canvas,antialias:true,alpha:true,powerPreference:'default'});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.toneMapping=Sr;renderer.toneMappingExposure=1.05;renderer.setClearColor(0x11171d,0);}
+  try {renderer=new za({canvas,antialias:true,alpha:true,powerPreference:'default'});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.toneMapping=Sr;renderer.toneMappingExposure=1.27;renderer.setClearColor(0x253039,0);}
   catch(error){const replacement=canvas.cloneNode(false);canvas.replaceWith(replacement);canvas=replacement;ctx=canvas.getContext('2d');if(!ctx)throw new Error('This browser could not start the viewer.');fe('compat-note').hidden=false;}
-  scene.add(new _r(0xc4e8ff,0x615147,2.6));const key=new yr(0xffead4,3.2);key.position.set(3,5,7);scene.add(key);const fill=new yr(0xa2d7ff,1.6);fill.position.set(-4,2,-5);scene.add(fill);
+  hemiLight=new _r(0xf4f3ed,0x73848a,3.2);keyLight=new yr(0xffead4,3.4);fillLight=new yr(0xcce7ff,2.2);backLight=new yr(0xdceaff,1.5);fillLight.position.set(-4,3,5);backLight.position.set(5,3,-6);scene.add(hemiLight,keyLight,fillLight,backLight);updateLighting();
   controls=new Ha(camera,canvas);controls.enableDamping=true;controls.dampingFactor=.12;controls.minDistance=.2;controls.maxDistance=65;controls.screenSpacePanning=true;controls.target.set(0,0,0);camera.position.set(1.5,1,10);controls.update();
   controls.addEventListener('change',()=>{drawDirty=true;hoverDirty=true;});
   attachPanelDragging();
